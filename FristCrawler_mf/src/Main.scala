@@ -4,11 +4,12 @@
 
 import java.net.URL
 
+import java.io.{BufferedWriter, OutputStreamWriter, FileOutputStream}
 import scala.collection.mutable.Queue
 import scala.io.Source
 import java.nio.file.{Paths, Files}
 
-case class url(href : String, path : URL, priority : Int)
+case class url(path : URL, priority : Int)
 
 class Crawler(seed : url){
   var frontier : Queue[url] = Queue(seed) //better: Priority queue instead of queue
@@ -20,13 +21,12 @@ class Crawler(seed : url){
   def explorePageForURLs(p : url) : List[url] = {
     println("explore...")
     println(p.path)
-    val seed = new URL(p.path.toString.substring(0, p.path.toString.lastIndexOf("/")) )
     try {
       val pagecontent = Source.fromURL(p.path)("UTF-8").mkString
       val testPattern = """\s*(?i)href\s*=\s*(\"([^"]*\")|'[^']*'|([^'">\s]+))""".r
       val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.contains("html"))
       val linksAsStr = linksAsList.map(s => s.replace("href=", "").replace("\"", "").replace("HREF=", ""))
-      linksAsStr.map(s => url(s, new URL(seed,s), 1))
+      linksAsStr.map(s => url(new URL(p.path,s), 1))
     } catch {
       case e: java.io.IOException => List()
       case e: java.nio.charset.MalformedInputException => List()
@@ -51,7 +51,19 @@ object Main {
     //val seed : String = args(0) //this line might be activated
     val domain : String = "http://idvm-infk-hofmann03.inf.ethz.ch/eth/www.ethz.ch/" //this line might be dropped
     val seed : String =  "en.html"
-    val mycrawler : Crawler = new Crawler( url(domain+seed, new URL(domain+seed), 1) )
+    val domainURL : URL = new URL(domain+seed)
+    val mycrawler : Crawler = new Crawler( url(domainURL, 1) )
+
+    /*
+    val st = "../weiterbildung/angebot/angebot-nach-faecher.html"
+    val st2 = "http://idvm-infk-hofmann03.inf.ethz.ch/eth/www.ethz.ch/weiterbildung/angebot/angebot-nach-faecher.html"
+    val turl = new URL( new URL(domain), st2)
+    println(turl)
+    mycrawler.frontier += new url( turl, 1)
+    println(mycrawler.frontier)
+    System.exit(1)
+*/
+
 
     mycrawler.status()
 
@@ -60,15 +72,20 @@ object Main {
       val nextpage : url = mycrawler.getNext()
       val links = mycrawler.explorePageForURLs(nextpage)
       for(l <- links){
-        val u = new url( domain+l.href.replace(" ",""), new URL(domain+l.href.replace(" ","")), 1 )
-        if( !mycrawler.frontier.contains(u) && !mycrawler.backyard.contains(u) ) mycrawler.frontier += u
+        val u = new url(l.path, 1 )
+        if( !mycrawler.frontier.contains(u) && !mycrawler.backyard.contains(u) && l.path.getHost == domainURL.getHost) mycrawler.frontier += u
       }
-      mycrawler.status()
+      //mycrawler.status()
     }
 
     println("*Postprocessing") //Analyze crawled pages
     mycrawler.status()
     mycrawler.backyard.foreach(println)
-    println( mycrawler.backyard.length )
-  }
+
+    val file = "backyard.txt"
+    val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))
+    for (x <- mycrawler.backyard) {
+      writer.write(x + "\n")  // however you want to format it
+    }
+    writer.close()  }
 }
