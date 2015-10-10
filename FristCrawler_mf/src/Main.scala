@@ -11,7 +11,7 @@ import java.nio.file.{Paths, Files}
 
 case class url(path : URL, priority : Int)
 
-class Crawler(seed : url){
+class Crawler(seed : url, offline : Boolean, saveashtml : Boolean){
   var frontier : Queue[url] = Queue(seed) //better: Priority queue instead of queue
   var backyard : Queue[url] = Queue()
 
@@ -20,14 +20,18 @@ class Crawler(seed : url){
 
   def explorePageForURLs(p : url) : List[url] = {
     println("explore...")
-    println(p.path)
+    println(p.path.toString)
+    //println(p.path.getPath)
+    //println(p.path.hashCode)
+    //println( Source.fromFile("html/" + p.path.hashCode + ".html").mkString )
+
     try {
-      val pagecontent = Source.fromURL(p.path)("UTF-8").mkString
+      val pagecontent = if (offline) Source.fromFile("html/" + p.path.hashCode + ".html").mkString else Source.fromURL(p.path)("UTF-8").mkString
       val testPattern = """\s*(?i)href\s*=\s*(\"([^"]*\")|'[^']*'|([^'">\s]+))""".r
       //val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.contains("html"))
       val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.endsWith(".html\""))
       val linksAsStr = linksAsList.map(s => s.replace("href=", "").replace("\"", "").replace("HREF=", ""))
-      saveHTML(p.path.getPath, pagecontent)
+      if(saveashtml && !offline) saveHTML(p.path.hashCode, pagecontent)
       linksAsStr.map(s => url(new URL(p.path,s), 1))
     } catch {
       case e: java.io.IOException => List()
@@ -44,9 +48,10 @@ class Crawler(seed : url){
     println("backyard - number of elements: " + backyard.headOption)
   }
 
-  def saveHTML(path : String, pagecontent : String) : Unit = {
-    val filename = "html/" + path.hashCode + ".html"
+  def saveHTML(path : Int, pagecontent : String) : Unit = {
+    val filename = "html/" + path + ".html"
     new PrintWriter(filename) { write(pagecontent); close }
+    println("Printed: " + filename)
   }
 }
 
@@ -58,8 +63,10 @@ object Main {
     //val seed : String = args(0) //this line might be activated
     val domain : String = "http://idvm-infk-hofmann03.inf.ethz.ch/eth/www.ethz.ch/" //this line might be dropped
     val seed : String =  "en.html"
+    val offline : Boolean = true
+    val saveashtml : Boolean = false
     val domainURL : URL = new URL(domain+seed)
-    val mycrawler : Crawler = new Crawler( url(domainURL, 1) )
+    val mycrawler : Crawler = new Crawler( url(domainURL, 1), offline, saveashtml )
 
     mycrawler.status()
 
