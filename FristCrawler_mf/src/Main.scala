@@ -4,7 +4,7 @@
 
 import java.net.URL
 
-import java.io.{BufferedWriter, OutputStreamWriter, FileOutputStream}
+import java.io.{PrintWriter, BufferedWriter, OutputStreamWriter, FileOutputStream}
 import scala.collection.mutable.Queue
 import scala.io.Source
 import java.nio.file.{Paths, Files}
@@ -24,8 +24,10 @@ class Crawler(seed : url){
     try {
       val pagecontent = Source.fromURL(p.path)("UTF-8").mkString
       val testPattern = """\s*(?i)href\s*=\s*(\"([^"]*\")|'[^']*'|([^'">\s]+))""".r
-      val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.contains("html"))
+      //val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.contains("html"))
+      val linksAsList = testPattern.findAllIn(pagecontent).toList.filter(s => s.endsWith(".html\""))
       val linksAsStr = linksAsList.map(s => s.replace("href=", "").replace("\"", "").replace("HREF=", ""))
+      saveHTML(p.path.getPath, pagecontent)
       linksAsStr.map(s => url(new URL(p.path,s), 1))
     } catch {
       case e: java.io.IOException => List()
@@ -41,6 +43,11 @@ class Crawler(seed : url){
     println("backyard - number of elements: " + backyard.length)
     println("backyard - number of elements: " + backyard.headOption)
   }
+
+  def saveHTML(path : String, pagecontent : String) : Unit = {
+    val filename = "html/" + path.hashCode + ".html"
+    new PrintWriter(filename) { write(pagecontent); close }
+  }
 }
 
 object Main {
@@ -54,17 +61,6 @@ object Main {
     val domainURL : URL = new URL(domain+seed)
     val mycrawler : Crawler = new Crawler( url(domainURL, 1) )
 
-    /*
-    val st = "../weiterbildung/angebot/angebot-nach-faecher.html"
-    val st2 = "http://idvm-infk-hofmann03.inf.ethz.ch/eth/www.ethz.ch/weiterbildung/angebot/angebot-nach-faecher.html"
-    val turl = new URL( new URL(domain), st2)
-    println(turl)
-    mycrawler.frontier += new url( turl, 1)
-    println(mycrawler.frontier)
-    System.exit(1)
-*/
-
-
     mycrawler.status()
 
     println("*Processing") //Crawling, on-the-fly analysis
@@ -75,7 +71,6 @@ object Main {
         val u = new url(l.path, 1 )
         if( !mycrawler.frontier.contains(u) && !mycrawler.backyard.contains(u) && l.path.getHost == domainURL.getHost) mycrawler.frontier += u
       }
-      //mycrawler.status()
     }
 
     println("*Postprocessing") //Analyze crawled pages
@@ -85,7 +80,7 @@ object Main {
     val file = "backyard.txt"
     val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))
     for (x <- mycrawler.backyard) {
-      writer.write(x + "\n")  // however you want to format it
+      writer.write(x.path.toString + "\t" + x.path.hashCode + "\n")  // however you want to format it
     }
     writer.close()  }
 }
