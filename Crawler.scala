@@ -1,3 +1,9 @@
+
+
+/**
+ * @author Matthias Fuhr, Andrei Parvu
+ */
+
 import scala.io.Source
 import java.net.URL
 import java.io._
@@ -27,11 +33,13 @@ object Crawling {
     for (x <- perm) yield l(x)
   }
 
+  // we can handle having more permutation and considering only a part of the
+  // hash function, but we don't use that now
   val HASH_PREFIX = 32
   val NUM_TABLES = 1 // number of permutations
   val HASH_BITS = 32
 
-  val perms = scala.collection.mutable.ListBuffer[List[Int]]()
+  val perms = new MutList[List[Int]]()
   val tables = new MutList[scala.collection.mutable.Map[String, MutList[Int]]]()
 
   val NUM_SHINGLES = 7
@@ -47,6 +55,7 @@ object Crawling {
     println("Distinct URLs found: " + urls.size)
     val exactDuplicates = content.foldLeft(0){(sum: Int, el: (Int, Int)) => sum + el._2 - 1}
     println("Exact duplicates found: " + exactDuplicates)
+
     constructTables(hashes.toList)
 
     var exploredIndexes = new scala.collection.mutable.HashSet[Int]
@@ -54,6 +63,7 @@ object Crawling {
 
     hashes.zipWithIndex foreach {
       case (hash, i) =>
+        // We want to eliminate already discovered similar pages, so we don't count twice.
         if (!exploredIndexes.contains(i)) {
           findNearDuplicates(hash) foreach {
             index =>
@@ -69,8 +79,7 @@ object Crawling {
 
   var queue = new java.util.concurrent.LinkedBlockingQueue[URL]
 
-  var lock = new Object
-  val NUM_THREADS = 10
+  val NUM_THREADS = 1
 
   def constructTables(hashes: List[List[Int]]) {
     for (_ <- 1 to NUM_TABLES) {
@@ -82,6 +91,7 @@ object Crawling {
           val temp = applyPermutation(hash, perms.last).take(HASH_PREFIX).mkString
           if (!curMap.contains(temp))
             curMap += temp -> new MutList[Int]()
+
           curMap(temp) += index
       }
 
@@ -103,13 +113,14 @@ object Crawling {
     results.toSet
   }
 
+
   def crawlPage(url: URL) {
     queue.add(url)
     urls.put(url.getPath, url.getPath)
     val threads = scala.collection.mutable.ArrayBuffer[Worker]()
 
     for (i <- 1 to NUM_THREADS) {
-      threads += new Worker()
+      threads += new Worker
       threads.last.start()
     }
 
@@ -141,18 +152,20 @@ object Crawling {
       shingles.toSet.map((x: List[String]) => x.mkString(" ")).toList
     }
 
-    def analyzeContent(pagecontent: String) {
+    def analyzeContent(pagecontent: String, url: String) {
       content.update(pagecontent.hashCode(), 1 + content(pagecontent.hashCode()))
 
       var student = "(?i)student".r
 
       studentOccurence.addAndGet(student.findAllIn(pagecontent).size)
 
+      // Keep only info from paragraphs.
       var paragraphs = "<p[^>]*>.*</p>".r
 
       var page_content = new MutList[String]()
 
       for (t <- paragraphs.findAllIn(pagecontent)) {
+        // Eliminate tags.
         var tags = "<[^>]*>".r
 
         page_content += tags.replaceAllIn(t, "")
@@ -173,7 +186,7 @@ object Crawling {
       try {
         val pagecontent = Source.fromURL(url)("UTF-8").mkString
 
-        analyzeContent(pagecontent);
+        analyzeContent(pagecontent, "http://" + url.getHost + url.getPath);
 
         val testPattern = """\s*(?i)href\s*=\s*(\"([^"]*\")|'[^']*'|([^'">\s]+))""".r
 
@@ -198,7 +211,7 @@ object Crawling {
         }
 
         for (new_url <- explorePageForURL(url)) {
-          lock.synchronized {
+          urls.synchronized {
             if (new_url.getHost == host && !urls.contains(new_url.getPath)) {
               urls.put(new_url.getPath, new_url.getPath)
               queue.add(new_url)
