@@ -1,10 +1,10 @@
 
+package termmodel
+
 import ch.ethz.dal.tinyir.alerts.ScoredResult
 import scala.collection.mutable.HashMap
-import ch.ethz.dal.tinyir.processing.Tokenizer
-import ch.ethz.dal.tinyir.processing.TipsterParse
+import ch.ethz.dal.tinyir.processing._
 import scala.collection.mutable.PriorityQueue
-import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ArrayBuffer
 
 class AlertsTfIdf(queries: List[String], n: Int) {

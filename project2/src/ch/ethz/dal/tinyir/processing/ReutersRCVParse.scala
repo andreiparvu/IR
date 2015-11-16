@@ -10,10 +10,10 @@ import java.io.InputStream
 import ch.ethz.dal.tinyir.io.DocStream
 
 
-class ReutersRCVParse(is: InputStream) extends XMLDocument(is) {
-  override def name = getAttrFromFirstNode("itemid", "newsitem").getOrElse("")
-  override def date = getAttrFromFirstNode("date","newsitem").getOrElse("")
-  override def codes = getAttrFromAllNodes("code","code").toSet
+class ReutersRCVParse(is: InputStream) extends XMLDocument(is) { 
+  override def name = getAttrFromFirstNode("itemid", "newsitem").getOrElse("") 
+  override def date = getAttrFromFirstNode("date","newsitem").getOrElse("")   
+  override def codes = getAttrFromAllNodes("code","code").toSet 
 }
 
 object ReutersRCVParse {
@@ -27,6 +27,6 @@ object ReutersRCVParse {
     println("DocID = " + parse.ID)
     println("Date  = " + parse.date)
     println("Codes = "+ parse.codes.mkString(" "))
-
+    
   }
 }

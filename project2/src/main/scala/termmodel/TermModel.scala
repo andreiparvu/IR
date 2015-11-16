@@ -1,22 +1,13 @@
-import ch.ethz.dal.tinyir.processing.ReutersRCVParse
-import ch.ethz.dal.tinyir.processing.Tokenizer
-import ch.ethz.dal.tinyir.processing.XMLDocument
-import ch.ethz.dal.tinyir.io.ParsedXMLStream
-import ch.ethz.dal.tinyir.io.ZipDirStream
-import java.io.InputStream
-import ch.ethz.dal.tinyir.io.DocStream
-import javax.xml.parsers.DocumentBuilderFactory
-import org.w3c.dom.{Document => XMLDoc}
-import ch.ethz.dal.tinyir.processing.TipsterParse
-import scala.collection.mutable.HashMap
+package termmodel
+
 import ch.ethz.dal.tinyir.io.TipsterStream
 import scala.collection.mutable.ListBuffer
 
 object TermModel {
 
   def main(args: Array[String]) {
-    val docs = new TipsterStream("/home/andrei/Documents/IR/project2/zips")
-    val queryDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/queries")
+    val docs = new TipsterStream("/IR2015/zips")
+    val queryDoc = scala.io.Source.fromFile("/IR2015/queries")
     val queryIds = new ListBuffer[Int]()
     val queries = new ListBuffer[String]()
 
