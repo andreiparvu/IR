@@ -9,12 +9,16 @@ import scala.collection.mutable.ArrayBuffer
 
 class AlertsTfIdf(queries: List[String], n: Int) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
+  //Why default 1?
   val df = new HashMap[String, Int]().withDefaultValue(1)
 
+  //Why set to 1?
   var nrDocs = 1
 
+  //So heaps is an array of queues containing scoredresult
   private val heaps = ArrayBuffer[PriorityQueue[ScoredResult]]()
 
+  //Initializing the array-> for each query
   for (_ <- 0 to queries.size) {
     heaps += new PriorityQueue[ScoredResult]()(Ordering.by(score))
   }
@@ -54,10 +58,10 @@ class AlertsTfIdf(queries: List[String], n: Int) {
 
   // heap and operations on heap
 
-  private def score (res: ScoredResult) = -res.score
+  private def score(res: ScoredResult) = -res.score
 
   private def add(heap: PriorityQueue[ScoredResult], res: ScoredResult) {
-    if (heap.size < n)  { // heap not full
+    if (heap.size < n) { // heap not full
       heap += res
     } else if (heap.head.score < res.score) {
       heap.dequeue
