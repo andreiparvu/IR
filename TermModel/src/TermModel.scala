@@ -11,14 +11,28 @@ import ch.ethz.dal.tinyir.processing.TipsterParse
 import scala.collection.mutable.HashMap
 import ch.ethz.dal.tinyir.io.TipsterStream
 import scala.collection.mutable.ListBuffer
+import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
 
 object TermModel {
 
   def main(args: Array[String]) {
-    val docs = new TipsterStream("/home/andrei/Documents/IR/project2/zips")
     val queryDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/queries")
     val queryIds = new ListBuffer[Int]()
     val queries = new ListBuffer[String]()
+    val synonymDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/synonyms")
+
+    var cnt = 0
+    var synonyms = new HashMap[Int, List[String]]()
+    var synonymGroup = new HashMap[String, Int]()
+    for (s <- synonymDoc.getLines()) {
+      cnt += 1
+      val words = s.split(" +").map(_.trim)
+      synonyms += cnt -> words.toList
+
+      for (w <- words) {
+        synonymGroup += w -> cnt
+      }
+    }
 
     for (q <- queryDoc.getLines()) {
       try {
@@ -29,23 +43,19 @@ object TermModel {
       }
     }
 
-    val alerts = new AlertsMLE(queries.toList, 10)
+    val alerts = new AlertsSynonyms(queries.toList, 10, synonyms, synonymGroup)
+
+    val iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
 
     var i = 1
-    try {
-      for (d <- docs.stream) {
-        alerts.process(d.name, d.body)
+    while(iter.hasNext) {
+    	val doc = iter.next
+    			alerts.process(doc.name, doc.body)
 
-        if (i % 100 == 0) {
-          println("Processed " + i)
-        }
-        i += 1
-        if (i == 1000) {
-          throw new Exception()
-        }
-      }
-    } catch {
-      case e: Exception => {}
+    			i += 1
+    			if (i % 1000 == 0) {
+    				println(i)
+    			}
     }
 
     alerts.results.zip(queryIds).foreach {
