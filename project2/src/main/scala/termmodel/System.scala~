@@ -59,7 +59,7 @@ object System {
     println("Stopped time = " + sw.stopped)
     alerts(51).results.take(5).foreach(println)  
     
-    var map_score = 0.0
+    var map = 0.0
     
     //Overall scoring
     for (q <- queries) {
@@ -70,11 +70,11 @@ object System {
       println(pr.relevIdx.mkString(" "))
       println(pr.precs.mkString(" "))
       println(pr.aps)
-      map_score += pr.aps
+      map += pr.aps
       println(pr.iprecs.mkString(" "))
       println(pr.iaps)
     }
-    map_score = map_score / queries.size
+    map = map / q.size
   }
 
   def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
