@@ -82,8 +82,9 @@ class TipsterCorpusIterator(path : String) extends Iterator[TipsterParse] {
 object TipsterCorpusIterator {
 	def main(args : Array[String]) = {
 		println(System.currentTimeMillis())
+		  val tipsterPath = "src/main/resources/IR2015/tipster/zips"
 	    val path = "/home/schmiflo/Data/IR2014/Tipster/zips"
-	  	val iter = new TipsterCorpusIterator(path)
+	  	val iter = new TipsterCorpusIterator(tipsterPath)
 	    
 	  	var count = 0;
 		while(iter.hasNext){

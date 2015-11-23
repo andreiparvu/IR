@@ -3,7 +3,7 @@ package termmodel
 import scala.collection.mutable.HashMap
 import ch.ethz.dal.tinyir.processing.Tokenizer
 
-class AlertsMLE(queries: List[String], n: Int) extends Alerts(queries, n) {
+class AlertsMLE(queries: List[String], n: Int) extends OwnAlerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val cf = new HashMap[String, Int]().withDefaultValue(0)
 

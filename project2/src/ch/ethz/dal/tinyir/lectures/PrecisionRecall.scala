@@ -9,15 +9,21 @@ class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A]) {
 
   // total number of relevant items  
   val num = relev.size
+  val fn = (relev.toList.diff(ranked.toList)).size
+  val tp = (ranked.toList.intersect(relev.toList)).size
 
   // indices in result list at which relevant items occur
   val relevIdx = ranked.zipWithIndex.filter{ case (r,_) => relev(r) }.map(_._2).toArray
   
   // precision values at index positions relevIdx
   val precs = relevIdx.zipWithIndex.map{case(rnk,rel)=> (rel+1)/(rnk+1).toDouble}
+  
+  val aps = precs.sum / (tp + fn).toDouble
     
   // interpolation of precision to all recall levels 
   val iprecs = precs.scanRight(0.0)( (a,b) => Math.max(a,b)).dropRight(1)
+  
+  val iaps = iprecs.sum / (tp + fn).toDouble
   
   // number of results to reach recall level 
   private def recall2num(recall: Double) = {
@@ -37,7 +43,7 @@ class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A]) {
 object PrecisionRecall {
   
   case class PrecRec (precision: Double, recall: Double) {
-    def mkstr: String = "P = " + precision + ", R = " + recall
+    def mkstr: String = "P = " + precision + ", R = " + recall + ", F1 = " + 2 * precision * recall / (precision + recall)
   }
 
   def evaluate[A] (retriev: Set[A], relev: Set[A]) = { 

@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.PriorityQueue
 import ch.ethz.dal.tinyir.alerts.ScoredResult
 
-abstract class Alerts(queries: List[String], n: Int) {
+abstract class OwnAlerts(queries: List[String], n: Int) {
   protected val heaps = ArrayBuffer[PriorityQueue[ScoredResult]]()
 
   for (_ <- 0 to queries.size) {

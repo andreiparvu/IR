@@ -1,5 +1,8 @@
 package main.scala.termmodel
+
 import scala.collection.mutable.ListBuffer
+import ch.ethz.dal.tinyir.lectures._
+
 
 class Evaluation {
   def precision(query: ListBuffer[String]) = {
