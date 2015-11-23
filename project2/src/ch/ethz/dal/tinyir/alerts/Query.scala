@@ -3,6 +3,7 @@ package ch.ethz.dal.tinyir.alerts
 import ch.ethz.dal.tinyir.processing.Tokenizer
 
 class Query (query: String) {  
+  val origQuery = query
   val qterms = Tokenizer.tokenize(query).distinct
   val length = qterms.length
 
