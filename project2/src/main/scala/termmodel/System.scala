@@ -12,7 +12,8 @@ import ch.ethz.dal.tinyir.indexing.FreqIndex
 import ch.ethz.dal.tinyir.alerts.AlertsTipster
 import ch.ethz.dal.tinyir.io.TipsterStream
 import ch.ethz.dal.tinyir.util.StopWatch
-import ch.ethz.dal.tinyir.lectures.PrecisionRecall
+import ch.ethz.dal.tinyir.lectures._
+
 
 object System {
   def main(args: Array[String]) {
@@ -33,8 +34,30 @@ object System {
     val q = List("a","i")
     println(q.mkString(" ") + " = " + idx.results(q).mkString(" "))*/
     
+    //Topic modeling
     val topics = new TipsterTopicParser(trainingTopicsPath)
     topics.parse()
+    
+    val vocabulary = topics.topics.map(_.qterms.toSet).reduce(_ | _)
+    val ntopics    = 40   
+    val model      = new TopicModel(vocabulary,ntopics)
+    val stream     = topics.topics.map{case x => TermFrequencies.tf(x.qterms)}.toStream
+        
+    for (i<- 0 until 100) model.learn(stream)
+    
+    model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
+    for (i <- 0 to ntopics-1) {
+      println("Topics for doc" + i + " = " + model.topics(stream(i)).mkString(" ")) 
+    }
+    
+    
+    val topicResPath = "ranking-t-2.run"
+    val topicLogger = new ResultLogger(topicResPath)
+    val languageResPath = "ranking-l-2.run"
+    val languageLogger = new ResultLogger(languageResPath)
+    
+    //Output format: topic-id rank document-id
+    
     
     val num = 100
     var alerts = Map[Int, AlertsTipster]()
@@ -42,18 +65,21 @@ object System {
     val sw = new StopWatch; sw.start
     var iter = 0
     for (doc <- tipster) {
-      for (q <- queries) {
-        if (iter == 0) {
-          println("Init topic " + q._1)
-          alerts(q._1) = new AlertsTipster(q._2.origQuery,num)
+      if (groundTruth.articles.contains(doc.name)) {
+        println(doc.name)
+        for (q <- queries) {
+          if (iter == 0) {
+            println("Init topic " + q._1)
+            alerts(q._1) = new AlertsTipster(q._2.origQuery,num)
+          }
+          alerts(q._1).process(doc.name, doc.tokens)
+          if (iter % 20000 ==0) {
+            println("Iteration = " + iter + " and topic " + q._1)
+            alerts(q._1).results.foreach(println)    
+          }
         }
-        alerts(q._1).process(doc.name, doc.tokens)
-        if (iter % 20000 ==0) {
-          println("Iteration = " + iter + " and topic " + q._1)
-          alerts(q._1).results.foreach(println)    
-        }
+        iter += 1
       }
-      iter += 1
     }
     sw.stop
     println("Stopped time = " + sw.stopped)

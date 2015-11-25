@@ -19,7 +19,7 @@ class Topic (topicMap: Map[String,String]) {
   val length = qterms.length
     
   def buildVocabulary(): List[String] = {
-    var terms = Set[String]()
+    var terms = List[String]()
     terms ++=StopWords.filter(Tokenizer.splitWords(t_dom).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_title).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_desc).distinct)
@@ -27,7 +27,7 @@ class Topic (topicMap: Map[String,String]) {
     terms ++=StopWords.filter(Tokenizer.splitWords(t_narr).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_con).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_def).distinct)
-    return terms.toList.filter(_.nonEmpty)
+    return terms.filter(_.nonEmpty)
   }
   
   override def toString(): String = "Topic " + t_num + " " + t_title + "\n(" + qterms.mkString(", ") + ")"
