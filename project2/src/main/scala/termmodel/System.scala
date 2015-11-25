@@ -60,10 +60,8 @@ object System {
     
     println(topicMapping)
     
-    
-    
-    
-    /*val topicResPath = "ranking-t-2.run"
+    //Results: use Logger.append to write to file
+    val topicResPath = "ranking-t-2.run"
     val topicLogger = new ResultLogger(topicResPath)
     val languageResPath = "ranking-l-2.run"
     val languageLogger = new ResultLogger(languageResPath)
@@ -71,6 +69,7 @@ object System {
     //Output format: topic-id rank document-id
     
     
+    //Evaluation
     val num = 100
     var alerts = Map[Int, AlertsTipster]()
     val tipster = new TipsterCorpusIterator(tipsterPath)
@@ -95,6 +94,8 @@ object System {
     }
     sw.stop
     println("Stopped time = " + sw.stopped)
+    
+    //For example for query 51
     alerts(51).results.take(5).foreach(println)  
     
     var map_score = 0.0
@@ -112,7 +113,7 @@ object System {
       println(pr.iprecs.mkString(" "))
       println(pr.iaps)
     }
-    map_score = map_score / queries.size*/
+    map_score = map_score / queries.size
   }
 
   def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
