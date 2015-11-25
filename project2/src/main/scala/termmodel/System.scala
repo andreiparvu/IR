@@ -42,16 +42,28 @@ object System {
     val ntopics    = 40   
     val model      = new TopicModel(vocabulary,ntopics)
     val stream     = topics.topics.map{case x => TermFrequencies.tf(x.qterms)}.toStream
-        
-    for (i<- 0 until 100) model.learn(stream)
     
-    model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
+    //Learning iterations
+    for (i<- 0 until 50) model.learn(stream)
+    
+    //Mapping the max output in  modeller to original topic number as defined in topics file
+    var topicMapping = Map[Int, Int]()
+    
+    //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
     for (i <- 0 to ntopics-1) {
       println("Topics for doc" + i + " = " + model.topics(stream(i)).mkString(" ")) 
+      //Mapping topic
+      println(topics.topics(i))
+      println(model.topics(stream(i)).argmax)
+      topicMapping(model.topics(stream(i)).argmax) = topics.topics(i).t_num
     }
     
+    println(topicMapping)
     
-    val topicResPath = "ranking-t-2.run"
+    
+    
+    
+    /*val topicResPath = "ranking-t-2.run"
     val topicLogger = new ResultLogger(topicResPath)
     val languageResPath = "ranking-l-2.run"
     val languageLogger = new ResultLogger(languageResPath)
@@ -100,7 +112,7 @@ object System {
       println(pr.iprecs.mkString(" "))
       println(pr.iaps)
     }
-    map_score = map_score / queries.size
+    map_score = map_score / queries.size*/
   }
 
   def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
