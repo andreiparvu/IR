@@ -1,19 +1,23 @@
 package ch.ethz.dal.tinyir.alerts
 
 import ch.ethz.dal.tinyir.processing.Tokenizer
+import ch.ethz.dal.tinyir.processing.StopWords
 
 class Query (query: String) {  
   val origQuery = query
-  val qterms = Tokenizer.tokenize(query).distinct
+  //Removing stop words as well
+  val qterms = StopWords.filter(Tokenizer.splitWords(query).distinct)
   val length = qterms.length
+  var tfs = Map[String,Int]()
+  var qtfs = Map[String,Int]()
 
   def score (doc: List[String]) : Double = {
-    val tfs : Map[String,Int]= doc.groupBy(identity).mapValues(l => l.length)
-    val qtfs = qterms.flatMap(q => tfs.get(q))
-    val numTermsInCommon = qtfs.length 
+    tfs = doc.groupBy(identity).mapValues(l => l.length)
+    qtfs = qterms.map(q => (q, tfs.getOrElse(q, 0))).toMap 
+    val numTermsInCommon = qtfs.filter{case(x, y) => y > 0}.size
     val docLen = tfs.values.map(x => x*x).sum.toDouble  // Euclidian norm
-    val queryLen = qterms.length .toDouble  
-    val termOverlap = qtfs.sum.toDouble / (docLen * queryLen)
+    val queryLen = qterms.length.toDouble  
+    val termOverlap = qtfs.filter{case(x, y) => y > 0}.values.sum.toDouble / (docLen * queryLen)
     
     // top ordering is by terms in common (and semantics)
     // integer range from 0...qterms.length

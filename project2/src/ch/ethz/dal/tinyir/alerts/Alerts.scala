@@ -20,9 +20,9 @@ class Alerts (q: String, n: Int) {
   def results = heap.toList.sortBy(res => -res.score)    
 
     // heap and operations on heap
-  private val heap = new PriorityQueue[ScoredResult]()(Ordering.by(score))
-  private def score (res: ScoredResult) = -res.score 
-  private def add(res: ScoredResult) : Boolean = {    
+  protected val heap = new PriorityQueue[ScoredResult]()(Ordering.by(score))
+  protected def score (res: ScoredResult) = -res.score 
+  protected def add(res: ScoredResult) : Boolean = {    
     if (heap.size < n)  { // heap not full
       heap += res
       true
