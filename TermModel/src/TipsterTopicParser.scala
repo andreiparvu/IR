@@ -3,7 +3,7 @@ import scala.collection.mutable.MutableList
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import ch.ethz.dal.tinyir.processing.Tokenizer
+import ch.ethz.dal.tinyir.processing._
 
 class TipsterTopicParser(var path: String) {
   var topics = new MutableList[Topic]()
@@ -14,8 +14,8 @@ class TipsterTopicParser(var path: String) {
   }
   def getVocabularySummary(id: Int): String = {
     println(topicIds)
-    val content = topics(topicIds(id)).t_smry
-    return Tokenizer.splitWords(content).toSet.mkString(" ")
+    val content = topics(topicIds(id)).t_smry.toLowerCase
+    return StopWords.filter(Tokenizer.tokenize(content)).toSet.mkString(" ")
   }
   def parse() {
     if (Files.exists(Paths.get(path))) {

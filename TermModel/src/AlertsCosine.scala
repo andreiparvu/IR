@@ -13,7 +13,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
 
   override def processDocument(doc: String) {
     tf.clear()
-    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+    for (w <- Tokenizer.tokenize(doc.toLowerCase)) {
       tf.update(w, tf(w) + 1)
       tfSum += 1
     }
@@ -37,7 +37,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   }
 
   override def computeScore(query: String): Double = {
-    val qtf = Tokenizer.tokenize(query).groupBy(identity).mapValues(l => l.length)
+    val qtf = Tokenizer.tokenize(query.toLowerCase).groupBy(identity).mapValues(l => l.length)
     val qtf_idf = qtf.map{ case(w, v)  => tf_idf(w, qtf.toMap)}
     val doctf_idf = qtf.map{ case(w, v)  => tf_idf(w, tf.toMap)}
     val qLen = qtf_idf.map(x => x*x).sum.toDouble  // Euclidian norm
