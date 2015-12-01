@@ -19,8 +19,8 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
     }
   }
 
-  def tf_idf(word: String, tfs: Map[String, Int]): Double = {
-    tfs.getOrElse(word, 0) * Math.log((nrDocs.toDouble + 1) / (df.getOrElse(word, 0).toDouble + 1))
+  def tf_idf(word: String, tf_val: Int): Double = {
+    tf_val * Math.log((nrDocs.toDouble + 1) / (df.getOrElse(word, 0).toDouble + 1))
   }
   
   override def preProcess(doc: String) {
@@ -38,12 +38,17 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
 
   override def computeScore(query: String): Double = {
     val qtf = Tokenizer.tokenize(query.toLowerCase).groupBy(identity).mapValues(l => l.length)
-    val qtf_idf = qtf.map{ case(w, v)  => tf_idf(w, qtf.toMap)}
-    val doctf_idf = qtf.map{ case(w, v)  => tf_idf(w, tf.toMap)}
-    val qLen = qtf_idf.map(x => x*x).sum.toDouble  // Euclidian norm
-    val docLen = doctf_idf.map(x => x*x).sum.toDouble  // Euclidian norm 
+    val qtf_idf = qtf.map{ case(w, v)  => tf_idf(w, v)}
+    val doctf_idf = qtf.map{ case(w, v)  => tf_idf(w, tf.getOrElse(w, 0))}
+    val qLen = Math.sqrt(qtf_idf.map(x => x*x).sum.toDouble)  // Euclidian norm
+    val docLen = Math.sqrt(doctf_idf.map(x => x*x).sum.toDouble)  // Euclidian norm 
     //Cosine between -1 and 1 (add one to have only positive values)
     
-    1 + (for ( (q, d) <- (qtf_idf zip doctf_idf)) yield q * d).sum / (docLen * qLen)
+    if (docLen == 0){
+      return 0
+    }
+    else {
+      1 + (for ( (q, d) <- (qtf_idf zip doctf_idf)) yield q * d).sum / (docLen * qLen)
+    }
   }
 }

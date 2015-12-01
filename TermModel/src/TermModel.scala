@@ -138,7 +138,7 @@ object TermModel {
 
     println("Queries " + queries2.mkString("\n"))
 
-    val alerts = new AlertsMLE(queries2, 100)
+    val alerts = new AlertsCosine(queries2, 100)
 
     var iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
 
@@ -163,7 +163,7 @@ object TermModel {
       alerts.process(doc.name, doc.body)
 
       i += 1
-      if (i % 10000 == 0) {
+      if (i % 100 == 0) {
         println(i)
       }
     }
@@ -175,17 +175,18 @@ object TermModel {
       val rel = groundTruth.judgements.get(q._1 + "").get.toSet
       pw.write(rel.toString() + "\n")
       val ret_term = alerts.results(q._1)
-      i += 1
       val t = ret_term.map(_.title).toSet
       pw.write(t.toString() + "\n")
 
       val truePos = (t & rel).size
       val precision = truePos.toDouble / t.size.toDouble
-      val recall = truePos.toDouble / rel.size.toDouble
+      val recall = truePos.toDouble / Math.min(rel.size.toDouble, 100.0)
 
       pw.write(precision + "\n")
       pw.write(recall + "\n")
-      totalF1 += precision * recall * 2 / (precision + recall)
+      if (precision != 0 && recall != 0){ 
+        totalF1 += precision * recall * 2 / (precision + recall)
+      }
     }
 
     pw.write(totalF1 / queries2.size + "")
