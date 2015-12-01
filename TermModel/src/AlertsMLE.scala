@@ -10,17 +10,19 @@ class AlertsMLE(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
   var tfSum = 0
   var cfSum = 0
 
+  override def preProcess(doc: String) {
+    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+      cf.update(w, cf(w) + 1)
+      cfSum += 1
+    }
+
+  }
   override def processDocument(doc: String) {
     tf.clear()
     tfSum = 0
     for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
       tf.update(w, tf(w) + 1)
       tfSum += 1
-    }
-
-    for ((w, freq) <- tf) {
-      cf.update(w, cf(w) + freq)
-      cfSum += freq
     }
   }
 

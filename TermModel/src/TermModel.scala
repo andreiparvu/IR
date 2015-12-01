@@ -83,11 +83,25 @@ object TermModel {
       }
     }
 
-    val alerts = new AlertsMLE(queries2, 100)
+    val alerts = new AlertsMLEStem(queries2, 100)
 
-    val iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
+    var iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
 
     var i = 1
+    while(iter.hasNext) {
+      val doc = iter.next
+      alerts.preProcess(doc.body)
+
+      i += 1
+        if (i % 10000 == 0) {
+          println(i)
+        }
+    }
+
+    println("Preprocessing done")
+
+    iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
+    i = 1
     try {
       while(iter.hasNext) {
       	val doc = iter.next
@@ -112,10 +126,11 @@ object TermModel {
       i += 1
       val t = ret_term.map(_.title).toSet
       pw.write(t.toString() + "\n")
+      pw.write(ret_term + "\n")
 
       val truePos = (t & rel).size
       val precision = truePos.toDouble / t.size.toDouble
-      val recall    = truePos.toDouble / rel.size.toDouble
+      val recall    = truePos.toDouble / Math.min(rel.size.toDouble, 100)
 
       pw.write(precision + "\n")
       pw.write(recall + "\n")
