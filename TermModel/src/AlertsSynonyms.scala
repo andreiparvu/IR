@@ -1,8 +1,10 @@
 
 import scala.collection.mutable.HashMap
+
+import ch.ethz.dal.tinyir.alerts.Query
 import ch.ethz.dal.tinyir.processing.Tokenizer
 
-class AlertsSynonyms(queries: List[String], n: Int, synonyms: HashMap[Int, List[String]],
+class AlertsSynonyms(queries: Map[Int, Query], n: Int, synonyms: HashMap[Int, List[String]],
     synonymGroup: HashMap[String, Int]) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val cf = new HashMap[String, Int]().withDefaultValue(0)

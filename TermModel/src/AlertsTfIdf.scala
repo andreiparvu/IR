@@ -6,8 +6,9 @@ import ch.ethz.dal.tinyir.processing.TipsterParse
 import scala.collection.mutable.PriorityQueue
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ArrayBuffer
+import ch.ethz.dal.tinyir.alerts.Query
 
-class AlertsTfIdf(queries: List[String], n: Int) extends Alerts(queries, n) {
+class AlertsTfIdf(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val df = new HashMap[String, Int]().withDefaultValue(1)
 

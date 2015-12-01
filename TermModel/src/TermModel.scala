@@ -12,8 +12,42 @@ import scala.collection.mutable.HashMap
 import ch.ethz.dal.tinyir.io.TipsterStream
 import scala.collection.mutable.ListBuffer
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
+import java.nio.file.Paths
+import java.nio.file.Files
+import scala.collection.mutable.MutableList
+import ch.ethz.dal.tinyir.alerts.Query
+import ch.ethz.dal.tinyir.lectures._
+import java.io.PrintWriter
 
 object TermModel {
+
+  def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
+    var queriesIds = new MutableList[Int]()
+    var queriesTexts = new MutableList[Query]()
+    if (Files.exists(Paths.get(queriesPath))) {
+      println("Found queries at " + queriesPath + "\n")
+
+      val queryDoc = scala.io.Source.fromFile(queriesPath)
+      for (line <- queryDoc.getLines()) {
+        println("Line " + line)
+
+        val numeric_regex = """^\s*\d+\s*$""".r
+
+        if (line.matches("""^\s*\d+\s*$""")) {
+          queriesIds += line.toInt
+        } else {
+          queriesTexts += new Query(line)
+        }
+      }
+    }
+    return (queriesIds zip queriesTexts).toMap[Int, Query]
+  }
+
+  def loadGroundTruth(groundTruthPath: String): TipsterGroundTruth = {
+    val t = new TipsterGroundTruth(groundTruthPath)
+    t.judgements.foreach(j => println("Topic " + j._1 + ": " + j._2.size + " judgements found."))
+    return t
+  }
 
   def main(args: Array[String]) {
     val queryDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/queries")
@@ -34,6 +68,12 @@ object TermModel {
       }
     }
 
+    val queriesPath = "/home/andrei/Documents/IR/project2/queries"
+    val trainingQueriesPath = "/home/andrei/Documents/IR/project2/qrels"
+    var queries2 = loadTrainingQueries(queriesPath)
+    println(queries)
+    var groundTruth = loadGroundTruth(trainingQueriesPath)
+
     for (q <- queryDoc.getLines()) {
       try {
         val id = q.toInt
@@ -43,27 +83,47 @@ object TermModel {
       }
     }
 
-    val alerts = new AlertsSynonyms(queries.toList, 10, synonyms, synonymGroup)
+    val alerts = new AlertsMLE(queries2, 100)
 
     val iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
 
     var i = 1
-    while(iter.hasNext) {
-    	val doc = iter.next
-    			alerts.process(doc.name, doc.body)
+    try {
+      while(iter.hasNext) {
+      	val doc = iter.next
+  			alerts.process(doc.name, doc.body)
 
-    			i += 1
-    			if (i % 1000 == 0) {
-    				println(i)
-    			}
-    }
-
-    alerts.results.zip(queryIds).foreach {
-      case (results, id) => {
-        results.foreach {
-          x => println(id + " " + x.title + " " + x.score)
-        }
+  			i += 1
+  			if (i % 10000 == 0) {
+  				println(i)
+  			}
       }
+    } catch {
+      case (e: Exception) => {}
     }
+
+    val pw = new PrintWriter("/home/andrei/results")
+    var totalF1: Double = 0
+    for (q <- queries2) {
+      pw.write(q._1 + "\n")
+      val rel = groundTruth.judgements.get(q._1 + "").get.toSet
+      pw.write(rel.toString() + "\n")
+      val ret_term = alerts.results(q._1)
+      i += 1
+      val t = ret_term.map(_.title).toSet
+      pw.write(t.toString() + "\n")
+
+      val truePos = (t & rel).size
+      val precision = truePos.toDouble / t.size.toDouble
+      val recall    = truePos.toDouble / rel.size.toDouble
+
+      pw.write(precision + "\n")
+      pw.write(recall + "\n")
+      totalF1 += precision * recall * 2 / (precision + recall)
+    }
+
+    pw.write(totalF1 / queries2.size + "")
+    pw.flush()
+    pw.close()
   }
 }

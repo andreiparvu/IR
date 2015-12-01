@@ -1,12 +1,14 @@
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.PriorityQueue
 import ch.ethz.dal.tinyir.alerts.ScoredResult
+import scala.collection.mutable.HashMap
+import ch.ethz.dal.tinyir.alerts.Query
 
-abstract class Alerts(queries: List[String], n: Int) {
-  protected val heaps = ArrayBuffer[PriorityQueue[ScoredResult]]()
+abstract class Alerts(queries: Map[Int, Query], n: Int) {
+  protected val heaps = HashMap[Int, PriorityQueue[ScoredResult]]()
 
-  for (_ <- 0 to queries.size) {
-    heaps += new PriorityQueue[ScoredResult]()(Ordering.by(score))
+  for ((k, v) <- queries) {
+    heaps += k -> new PriorityQueue[ScoredResult]()(Ordering.by(score))
   }
 
   def processDocument(doc: String)
@@ -15,15 +17,13 @@ abstract class Alerts(queries: List[String], n: Int) {
   // score a document and try to add to results
   def process(title: String, doc: String) {
     processDocument(doc)
-    queries.zipWithIndex foreach {
-      case (q, i) => {
-        add(heaps(i), ScoredResult(title, computeScore(q)))
-      }
+    for ((k, v) <- queries) {
+      add(heaps(k), ScoredResult(title, computeScore(v.origQuery)))
     }
   }
 
   // get top n results (or m<n, if not enough docs processed)
-  def results = heaps.map(_.toList.sortBy(res => -res.score))
+  def results = heaps.mapValues(_.toList.sortBy(res => -res.score))
 
   // heap and operations on heap
 
