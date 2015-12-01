@@ -43,6 +43,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
     val qLen = qtf_idf.map(x => x*x).sum.toDouble  // Euclidian norm
     val docLen = doctf_idf.map(x => x*x).sum.toDouble  // Euclidian norm 
     //Cosine between -1 and 1 (add one to have only positive values)
-    1 + qtf.map{ case(w, v)  => tf_idf(w, tf.toMap) * tf_idf(w, qtf)}.sum / (docLen * qLen)
+    
+    1 + (for ( (q, d) <- (qtf_idf zip doctf_idf)) yield q * d).sum / (docLen * qLen)
   }
 }

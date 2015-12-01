@@ -138,7 +138,7 @@ object TermModel {
 
     println("Queries " + queries2.mkString("\n"))
 
-    val alerts = new AlertsCosine(queries2, 100)
+    val alerts = new AlertsMLE(queries2, 100)
 
     var iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
 
