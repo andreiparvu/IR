@@ -76,7 +76,7 @@ object TermModel {
     val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
 
     //Learning iterations
-    for (i <- 0 until 50) model.learn(stream)
+    for (i <- 0 until 100) model.learn(stream)
 
     //Mapping the max output in  modeler to original topic number as defined in topics file
     var topicMapping = Map[Int, Int]()
@@ -122,7 +122,7 @@ object TermModel {
           //Mapping topics
           val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(q))).argmax
           if (topicMapping.contains(topicId)) {
-            queries += q + " " + topics.getVocabulary(topicMapping(topicId))
+            queries += q + " " + topics.getVocabularySummary(topicMapping(topicId))
           }
           else {
             queries += q 

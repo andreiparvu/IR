@@ -44,6 +44,6 @@ object Tokenizer {
   
   def cleanWhiteSpaces(text: String): String = {
     val whitespace_regex = """\s+""".r
-    whitespace_regex.replaceAllIn(text, " ")
+    whitespace_regex.replaceAllIn(text.toLowerCase(), " ")
   }
 }

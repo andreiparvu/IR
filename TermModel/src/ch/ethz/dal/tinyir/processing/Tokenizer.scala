@@ -6,7 +6,7 @@ object Tokenizer {
   val whitespace_regex = """\s+""".r
   //val punct_regex = """[\p{P}\p{S}]""".r
   val punct_regex = """[^\P{P}-]+""".r
-  val useless_punct_regex = """[\(\)\[\],\.\?\!:;\\_\"&]""".r
+  val useless_punct_regex = """[\(\)\[\],\.\?\!:;\\_\"&<>]""".r
   //val punct_regex = """[\p{P}]""".r
   val digit_regex = """\d+""".r
   val start_whitespace_regex = """^\s+""".r
@@ -24,13 +24,13 @@ object Tokenizer {
     //Lower case
     var cleanText = text.toLowerCase()
     cleanText = digit_regex.replaceAllIn(cleanText, "")
-    //cleanText = useless_punct_regex.replaceAllIn(cleanText, "")
+    cleanText = useless_punct_regex.replaceAllIn(cleanText, "")
     cleanText = whitespace_regex.replaceAllIn(cleanText, " ")
     //Removing punctuation
     cleanText = punct_regex.replaceAllIn(cleanText, "")
-    //cleanText = r1.replaceAllIn(cleanText, "")
-    //cleanText = r2.replaceAllIn(cleanText, "$1 ")
-    //cleanText = r3.replaceAllIn(cleanText, " $1")
+    cleanText = r1.replaceAllIn(cleanText, "")
+    cleanText = r2.replaceAllIn(cleanText, "$1 ")
+    cleanText = r3.replaceAllIn(cleanText, " $1")
     cleanText = start_whitespace_regex.replaceAllIn(cleanText, "")
     cleanText = trailing_whitespace_regex.replaceAllIn(cleanText, "")
     //Splitting to words and removing stop words

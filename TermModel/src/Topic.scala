@@ -25,7 +25,7 @@ class Topic (topicMap: Map[String,String]) {
     terms ++=StopWords.filter(Tokenizer.splitWords(t_narr).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_con).distinct)
     terms ++=StopWords.filter(Tokenizer.splitWords(t_def).distinct)
-    return terms.filter(_.nonEmpty)
+    return StopWords.filter(terms.filter(_.nonEmpty).toSeq).toList
   }
   
   override def toString(): String = "Topic " + t_num + " " + t_title + "\n(" + qterms.mkString(", ") + ")"
