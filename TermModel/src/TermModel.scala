@@ -140,11 +140,25 @@ object TermModel {
     
     println("Queries " + queries2.mkString("\n"))
     
-    val alerts = new AlertsCosine(queries2, 100)
+    val alerts = new AlertsMLEStem(queries2, 100)
 
-    val iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
+    var iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
 
     var i = 1
+    while(iter.hasNext) {
+      val doc = iter.next
+      alerts.preProcess(doc.body)
+
+      i += 1
+        if (i % 10000 == 0) {
+          println(i)
+        }
+    }
+
+    println("Preprocessing done")
+
+    iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
+    i = 1
     try {
       while(iter.hasNext) {
       	val doc = iter.next
@@ -158,6 +172,7 @@ object TermModel {
     } catch {
       case (e: Exception) => {}
     }
+
 
     val pw = new PrintWriter("./resultsCosine")
     var totalF1: Double = 0

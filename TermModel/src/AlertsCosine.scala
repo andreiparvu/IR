@@ -12,15 +12,10 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   var nrDocs = 0
 
   override def processDocument(doc: String) {
-    nrDocs += 1
     tf.clear()
     for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
       tf.update(w, tf(w) + 1)
       tfSum += 1
-    }
-
-    for (w <- tf.keys) {
-      df.update(w, df(w) + 1)
     }
   }
 
@@ -29,16 +24,16 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   }
   
   override def preProcess(doc: String) {
-    nrDocs += 1
     val terms = new HashSet[String]();
 
-    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+    for (w <- Tokenizer.tokenize(doc.toLowerCase)) {
       terms += w
     }
 
     for (w <- terms) {
       df.update(w, df(w) + 1)
     }
+    nrDocs += 1
   }
 
   override def computeScore(query: String): Double = {
