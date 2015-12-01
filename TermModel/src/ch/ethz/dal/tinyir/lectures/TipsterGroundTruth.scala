@@ -13,6 +13,11 @@ class TipsterGroundTruth(path:String) {
   .groupBy(_._1)
   .mapValues(_.map(_._2))
 
+  val articles: Set[String] = 
+  Source.fromFile(path).getLines()
+  .map(l => l.split(" "))
+  .map(e => e(2).replaceAll("-", ""))
+  .toSet
 }
 
 object TipsterGroundTruth {

@@ -29,6 +29,10 @@ case class ProbVector (val arr: Array[Double]) extends AnyVal {
   
   def normalize : ProbVector = normalize(1.0) 
   def normalize (s: Double): ProbVector = { updateScalar(s/arr.sum, _*_); this} 
+  
+  def max = arr.max
+  
+  def argmax = arr.zipWithIndex.maxBy(_._1)._2
 
   
   def copy(other : ProbVector): ProbVector = {

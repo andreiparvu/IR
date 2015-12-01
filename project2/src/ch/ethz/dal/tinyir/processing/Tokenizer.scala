@@ -5,8 +5,9 @@ import com.github.aztek.porterstemmer.PorterStemmer
 object Tokenizer {
   val whitespace_regex = """\s+""".r
   //val punct_regex = """[\p{P}\p{S}]""".r
+  val punct_regex = """[^\P{P}-]+""".r
   val useless_punct_regex = """[\(\)\[\],\.\?\!:;\\_\"&]""".r
-  val punct_regex = """[\p{P}]""".r
+  //val punct_regex = """[\p{P}]""".r
   val digit_regex = """\d+""".r
   val start_whitespace_regex = """^\s+""".r
   val trailing_whitespace_regex = """\s+$""".r
@@ -23,17 +24,22 @@ object Tokenizer {
     //Lower case
     var cleanText = text.toLowerCase()
     cleanText = digit_regex.replaceAllIn(cleanText, "")
-    cleanText = useless_punct_regex.replaceAllIn(cleanText, "")
+    //cleanText = useless_punct_regex.replaceAllIn(cleanText, "")
     cleanText = whitespace_regex.replaceAllIn(cleanText, " ")
     //Removing punctuation
-    //cleanText = punct_regex.replaceAllIn(cleanText, "")
-    cleanText = r1.replaceAllIn(cleanText, "")
-    cleanText = r2.replaceAllIn(cleanText, "$1 ")
-    cleanText = r3.replaceAllIn(cleanText, " $1")
+    cleanText = punct_regex.replaceAllIn(cleanText, "")
+    //cleanText = r1.replaceAllIn(cleanText, "")
+    //cleanText = r2.replaceAllIn(cleanText, "$1 ")
+    //cleanText = r3.replaceAllIn(cleanText, " $1")
     cleanText = start_whitespace_regex.replaceAllIn(cleanText, "")
     cleanText = trailing_whitespace_regex.replaceAllIn(cleanText, "")
     //Splitting to words and removing stop words
-    return StopWords.filter(whitespace_regex.split(cleanText).filter(w => !punct.contains(w)).filter(_.nonEmpty).map(w => PorterStemmer.stem(w))).toList
+    return StopWords.filter(whitespace_regex.split(cleanText).filter(w => !punct.contains(w)).filter(_.nonEmpty)).map(w => PorterStemmer.stem(w)).toList
+  }
+  
+  def getTokens(text: String): List[String] = {
+    var items = text.replaceAll("[,.!?;:]", "$0 ").toLowerCase().replaceAll("\\d"," ").replaceAll("\\p{Punct}", " ").replaceAll("\\s+", " ").split("\\s+")
+    return StopWords.filter(items.toList.filter(w => !punct.contains(w) && w.length() > 1).filter(_.nonEmpty).map(w => PorterStemmer.stem(w))).toList
   }
   
   def cleanWhiteSpaces(text: String): String = {

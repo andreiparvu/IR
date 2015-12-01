@@ -1,12 +1,9 @@
 
-import ch.ethz.dal.tinyir.alerts.ScoredResult
+import scala.annotation.migration
 import scala.collection.mutable.HashMap
-import ch.ethz.dal.tinyir.processing.Tokenizer
-import ch.ethz.dal.tinyir.processing.TipsterParse
-import scala.collection.mutable.PriorityQueue
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.ArrayBuffer
+
 import ch.ethz.dal.tinyir.alerts.Query
+import ch.ethz.dal.tinyir.processing.Tokenizer
 
 class AlertsTfIdf(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)

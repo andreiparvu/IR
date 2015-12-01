@@ -28,7 +28,7 @@ class AlertsTipsterCustom(q: String, n: Int, scoreType: String) extends AlertsTi
     cfs ++= doc.map(t => t-> (1+cfs.getOrElse(t,0)))
     qdfs ++= qtfs.map{case(t, v) => t-> (1+dfs.getOrElse(t,0))}
     qcfs ++= qtfs.toMap.map{case(t, v) => t-> (v+qcfs.getOrElse(t,0))}
-    println(qtfs)
+    //println(qtfs)
     super.add(ScoredResult(title,processScore()))
   }
   

@@ -1,3 +1,4 @@
 *.class
 bin/
 project2/src/main/resources/IR2015/
+TermModel/src/resources/

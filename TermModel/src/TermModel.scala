@@ -1,23 +1,20 @@
-import ch.ethz.dal.tinyir.processing.ReutersRCVParse
-import ch.ethz.dal.tinyir.processing.Tokenizer
-import ch.ethz.dal.tinyir.processing.XMLDocument
-import ch.ethz.dal.tinyir.io.ParsedXMLStream
-import ch.ethz.dal.tinyir.io.ZipDirStream
-import java.io.InputStream
-import ch.ethz.dal.tinyir.io.DocStream
-import javax.xml.parsers.DocumentBuilderFactory
-import org.w3c.dom.{Document => XMLDoc}
-import ch.ethz.dal.tinyir.processing.TipsterParse
-import scala.collection.mutable.HashMap
-import ch.ethz.dal.tinyir.io.TipsterStream
-import scala.collection.mutable.ListBuffer
-import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
-import java.nio.file.Paths
-import java.nio.file.Files
-import scala.collection.mutable.MutableList
-import ch.ethz.dal.tinyir.alerts.Query
-import ch.ethz.dal.tinyir.lectures._
 import java.io.PrintWriter
+import java.nio.file.Files
+import java.nio.file.Paths
+
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.Map
+import scala.collection.mutable.MutableList
+import scala.collection.mutable.Set
+
+import ch.ethz.dal.tinyir.alerts.Query
+import ch.ethz.dal.tinyir.lectures.TermFrequencies
+import ch.ethz.dal.tinyir.lectures.TipsterGroundTruth
+import ch.ethz.dal.tinyir.lectures.TopicModel
+import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
+
+import ch.ethz.dal.tinyir.processing.Tokenizer
 
 object TermModel {
 
@@ -50,10 +47,10 @@ object TermModel {
   }
 
   def main(args: Array[String]) {
-    val queryDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/queries")
+    val queryDoc = scala.io.Source.fromFile("src/resources/queries")
     val queryIds = new ListBuffer[Int]()
     val queries = new ListBuffer[String]()
-    val synonymDoc = scala.io.Source.fromFile("/home/andrei/Documents/IR/project2/synonyms")
+    val synonymDoc = scala.io.Source.fromFile("src/resources/synonyms")
 
     var cnt = 0
     var synonyms = new HashMap[Int, List[String]]()
@@ -67,9 +64,51 @@ object TermModel {
         synonymGroup += w -> cnt
       }
     }
+    
+    val trainingTopicsPath = "src/resources/topics"
+    //Topic modeling
+    val topics = new TipsterTopicParser(trainingTopicsPath)
+    topics.parse()
 
-    val queriesPath = "/home/andrei/Documents/IR/project2/queries"
-    val trainingQueriesPath = "/home/andrei/Documents/IR/project2/qrels"
+    val vocabulary = topics.topics.map(_.qterms.toSet).reduce(_ | _)
+    val ntopics = topics.topics.size
+    val model = new TopicModel(vocabulary, ntopics)
+    val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
+
+    //Learning iterations
+    for (i <- 0 until 50) model.learn(stream)
+
+    //Mapping the max output in  modeler to original topic number as defined in topics file
+    var topicMapping = Map[Int, Int]()
+
+    //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
+    for (i <- 0 until ntopics) {
+      println("*** Topic model for doc " + i + " = " + model.topics(stream(i)).mkString(" ") + " ***")
+      //Mapping topic
+      println(i + " is topic " + topics.topics(i).t_num + " mapped to " + model.topics(stream(i)).argmax)
+      //println(model.topics(stream(i)).argmax)
+      topicMapping(model.topics(stream(i)).argmax) = topics.topics(i).t_num
+    }
+
+    //println(topicMapping)
+    var topicVocs = Map[Int, Set[String]]().withDefaultValue(Set.empty)
+    for ((w, a) <- model.Pwt) {
+      for (id <- 0 until ntopics) {
+        //println((a.arr).length + " " +  a.arr(10))
+        if (a.arr(id) > 0) {
+          topicVocs(id).add(w)
+        }
+      }
+    }
+    
+    
+    println(topicMapping.mkString("\n"))
+    
+        
+    //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
+
+    val queriesPath = "src/resources/queries"
+    val trainingQueriesPath = "src/resources/IR2015/tipster/qrels"
     var queries2 = loadTrainingQueries(queriesPath)
     println(queries)
     var groundTruth = loadGroundTruth(trainingQueriesPath)
@@ -79,13 +118,24 @@ object TermModel {
         val id = q.toInt
         queryIds += id
       } catch {
-        case e: Exception => queries += q
+        case e: Exception => { 
+          //Mapping topics
+          val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(q))).argmax
+          if (topicMapping.contains(topicId)) {
+            queries += q + " " + topics.getVocabulary(topicMapping(topicId))
+          }
+          else {
+            queries += q 
+          }
+        }
       }
     }
+    
+    println("Queries " + queries.mkString("\n"))
+    
+    val alerts = new AlertsCosine(queries2, 100)
 
-    val alerts = new AlertsMLE(queries2, 100)
-
-    val iter = new TipsterCorpusIterator("/home/andrei/Documents/IR/project2/zips")
+    val iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
 
     var i = 1
     try {
@@ -102,7 +152,7 @@ object TermModel {
       case (e: Exception) => {}
     }
 
-    val pw = new PrintWriter("/home/andrei/results")
+    val pw = new PrintWriter("./resultsCosine")
     var totalF1: Double = 0
     for (q <- queries2) {
       pw.write(q._1 + "\n")

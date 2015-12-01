@@ -81,19 +81,20 @@ object System {
     var iter = 0
     for (doc <- tipster) {
       //if (groundTruth.articles.contains(doc.name)) {
-      println(doc.name)
+      //println(doc.name)
+      val tokens = doc.tokens
       for (q <- queries) {
         if (iter == 0) {
           println("Init topic " + q._1)
           alertsLanguage(q._1) = new AlertsTipsterCustom(q._2.origQuery, num, "language")
           alertsTerm(q._1) = new AlertsTipsterCustom(q._2.origQuery, num, "term")
         }
-        alertsLanguage(q._1).process(doc.name, doc.tokens)
-        alertsTerm(q._1).process(doc.name, doc.tokens)
-        if (iter % 20000 == 0) {
+        alertsLanguage(q._1).process(doc.name, tokens)
+        alertsTerm(q._1).process(doc.name, tokens)
+        if (iter % 10000 == 0) {
           println("Iteration = " + iter + " and topic " + q._1)
-          alertsLanguage(q._1).results.foreach(println)
-          alertsTerm(q._1).results.foreach(println)
+          //alertsLanguage(q._1).results.foreach(println)
+          //alertsTerm(q._1).results.foreach(println)
         }
       }
       iter += 1

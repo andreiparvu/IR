@@ -22,7 +22,11 @@ class TopicModel (vocabulary: Set[String], ntopics : Int) {
   // one iteration of the generalized Csizar algorithm 
   private def iteration(Ptd : ProbVector, doc: Map[String,Int]) : ProbVector = {
     val newPtd = ProbVector(new Array[Double](ntopics)) 
-    for ((w,f) <- doc) newPtd += (Pwt(w) * Ptd).normalize(f)
+    for ((w,f) <- doc) {
+      if (vocabulary.contains(w)) {
+        newPtd += (Pwt(w) * Ptd).normalize(f)
+      }
+    }
     newPtd.normalize
   }  
   
