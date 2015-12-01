@@ -1,6 +1,7 @@
 import scala.collection.mutable.HashMap
 import ch.ethz.dal.tinyir.alerts.Query
 import ch.ethz.dal.tinyir.processing.Tokenizer
+import scala.collection.mutable.HashSet
 
 
 class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
@@ -11,13 +12,26 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
   var tfSum = 0
   var cfSum = 0
   var dfSum = 0
-  var nDoc = 0
+  var nrDocs = 0
+  
+  override def preProcess(doc: String) {
+    nrDocs += 1
+    val terms = new HashSet[String]();
+
+    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+      terms += w
+    }
+
+    for (w <- terms) {
+      df.update(w, df(w) + 1)
+    }
+  }
 
   override def processDocument(doc: String) {
     tf.clear()
     tfSum = 0
     
-    nDoc += 1
+    nrDocs += 1
     
     //println(doc)
     for (w <- Tokenizer.tokenize(doc)) {
@@ -36,6 +50,8 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
     }
   }
   
+  
+  
 
   private val lambda = 0.5
 
@@ -45,7 +61,7 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
   }
   
   def language(word: String): Double = {
-    tf(word).toDouble * Math.log((nDoc + 1) / (df(word) + 1)) 
+    tf(word).toDouble * Math.log((nrDocs + 1) / (df(word) + 1)) 
   }
   
   override def computeScore(query: String): Double = {

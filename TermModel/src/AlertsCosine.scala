@@ -2,6 +2,7 @@ import scala.collection.mutable.HashMap
 
 import ch.ethz.dal.tinyir.alerts.Query
 import ch.ethz.dal.tinyir.processing.Tokenizer
+import scala.collection.mutable.HashSet
 
 class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
@@ -25,6 +26,19 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
 
   def tf_idf(word: String, tfs: Map[String, Int]): Double = {
     tfs(word) * Math.log((nrDocs.toDouble + 1) / (df(word).toDouble + 1))
+  }
+  
+  override def preProcess(doc: String) {
+    nrDocs += 1
+    val terms = new HashSet[String]();
+
+    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+      terms += w
+    }
+
+    for (w <- terms) {
+      df.update(w, df(w) + 1)
+    }
   }
 
   override def computeScore(query: String): Double = {

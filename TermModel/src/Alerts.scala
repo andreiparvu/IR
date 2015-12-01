@@ -14,6 +14,8 @@ abstract class Alerts(queries: Map[Int, Query], n: Int) {
   def processDocument(doc: String)
   def computeScore(q: String): Double
 
+  def preProcess(doc: String);
+
   // score a document and try to add to results
   def process(title: String, doc: String) {
     processDocument(doc)

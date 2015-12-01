@@ -1,4 +1,3 @@
-
 import scala.collection.mutable.HashMap
 
 import ch.ethz.dal.tinyir.alerts.Query
@@ -12,6 +11,7 @@ class AlertsSynonyms(queries: Map[Int, Query], n: Int, synonyms: HashMap[Int, Li
   var tfSum = 0
   var cfSum = 0
 
+  override def preProcess(doc: String) {}
   override def processDocument(doc: String) {
     tf.clear()
     tfSum = 0
