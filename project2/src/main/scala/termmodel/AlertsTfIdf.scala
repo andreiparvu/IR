@@ -13,10 +13,9 @@ class AlertsTfIdf(queries: List[String], n: Int) extends OwnAlerts(queries, n) {
   val df = new HashMap[String, Int]().withDefaultValue(1)
 
   var tfSum = 0
-  var nrDocs = 1
+  var nrDocs = 0
 
   override def processDocument(doc: String) {
-    nrDocs += 1
     tf.clear()
     for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
       tf.update(w, tf(w) + 1)
@@ -26,10 +25,12 @@ class AlertsTfIdf(queries: List[String], n: Int) extends OwnAlerts(queries, n) {
     for (w <- tf.keys) {
       df.update(w, df(w) + 1)
     }
+    nrDocs += 1
   }
 
   def tf_idf(word: String): Double = {
-    Math.log(1 + tf(word).toDouble / tfSum) * Math.log(nrDocs.toDouble / df(word).toDouble)
+    //Math.log(1 + tf(word).toDouble / tfSum) * Math.log(nrDocs.toDouble / df(word).toDouble)
+    Math.log(1 + tf(word).toDouble) * Math.log((nrDocs.toDouble + 1) / (df(word).toDouble + 1))
   }
 
   override def computeScore(query: String): Double = {
