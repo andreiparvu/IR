@@ -159,18 +159,15 @@ object TermModel {
 
     iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
     i = 1
-    try {
-      while(iter.hasNext) {
-      	val doc = iter.next
-  			alerts.process(doc.name, doc.body)
+    
+    while(iter.hasNext) {
+    	val doc = iter.next
+			alerts.process(doc.name, doc.body)
 
-  			i += 1
-  			if (i % 10000 == 0) {
-  				println(i)
-  			}
-      }
-    } catch {
-      case (e: Exception) => {}
+			i += 1
+			if (i % 10000 == 0) {
+				println(i)
+			}
     }
 
 

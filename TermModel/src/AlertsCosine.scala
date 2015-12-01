@@ -20,7 +20,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   }
 
   def tf_idf(word: String, tfs: Map[String, Int]): Double = {
-    tfs(word) * Math.log((nrDocs.toDouble + 1) / (df(word).toDouble + 1))
+    tfs.getOrElse(word, 0) * Math.log((nrDocs.toDouble + 1) / (df.getOrElse(word, 0).toDouble + 1))
   }
   
   override def preProcess(doc: String) {
