@@ -18,7 +18,7 @@ import ch.ethz.dal.tinyir.processing.Tokenizer
 
 object TermModel {
 
-  def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
+  def loadTrainingQueries(queriesPath: String, model: TopicModel, topics: TipsterTopicParser, topicMapping: Map[Int, Int]): collection.immutable.Map[Int, Query] = {
     var queriesIds = new MutableList[Int]()
     var queriesTexts = new MutableList[Query]()
     if (Files.exists(Paths.get(queriesPath))) {
@@ -33,7 +33,14 @@ object TermModel {
         if (line.matches("""^\s*\d+\s*$""")) {
           queriesIds += line.toInt
         } else {
-          queriesTexts += new Query(line)
+          //Mapping topics
+          val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(line))).argmax
+          if (topicMapping.contains(topicId)) {
+            queriesTexts += new Query(line + " " + topics.getVocabularySummary(topicMapping(topicId)))
+          }
+          else {
+            queriesTexts += new Query(line)
+          }
         }
       }
     }
@@ -76,7 +83,7 @@ object TermModel {
     val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
 
     //Learning iterations
-    for (i <- 0 until 100) model.learn(stream)
+    for (i <- 0 until 50) model.learn(stream)
 
     //Mapping the max output in  modeler to original topic number as defined in topics file
     var topicMapping = Map[Int, Int]()
@@ -91,7 +98,7 @@ object TermModel {
     }
 
     //println(topicMapping)
-    var topicVocs = Map[Int, Set[String]]().withDefaultValue(Set.empty)
+    /*var topicVocs = Map[Int, Set[String]]().withDefaultValue(Set.empty)
     for ((w, a) <- model.Pwt) {
       for (id <- 0 until ntopics) {
         //println((a.arr).length + " " +  a.arr(10))
@@ -102,18 +109,18 @@ object TermModel {
     }
     
     
-    println(topicMapping.mkString("\n"))
+    println(topicMapping.mkString("\n"))*/
     
         
     //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
 
     val queriesPath = "src/resources/queries"
     val trainingQueriesPath = "src/resources/IR2015/tipster/qrels"
-    var queries2 = loadTrainingQueries(queriesPath)
+    var queries2 = loadTrainingQueries(queriesPath, model, topics, topicMapping)
     println(queries)
     var groundTruth = loadGroundTruth(trainingQueriesPath)
 
-    for (q <- queryDoc.getLines()) {
+    /*for (q <- queryDoc.getLines()) {
       try {
         val id = q.toInt
         queryIds += id
@@ -129,9 +136,9 @@ object TermModel {
           }
         }
       }
-    }
+    }*/
     
-    println("Queries " + queries.mkString("\n"))
+    println("Queries " + queries2.mkString("\n"))
     
     val alerts = new AlertsCosine(queries2, 100)
 

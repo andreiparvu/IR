@@ -14,7 +14,7 @@ class TipsterTopicParser(var path: String) {
   }
   def getVocabularySummary(id: Int): String = {
     println(topicIds)
-    val content = topics(topicIds(id)).t_narr
+    val content = topics(topicIds(id)).t_smry
     return Tokenizer.splitWords(content).toSet.mkString(" ")
   }
   def parse() {

@@ -33,6 +33,7 @@ class Alerts (q: String, n: Int) {
       } else false
   }
   
+  override def toString = q
 
 }
 

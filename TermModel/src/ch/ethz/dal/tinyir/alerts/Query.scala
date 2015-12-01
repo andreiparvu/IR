@@ -24,4 +24,6 @@ class Query (query: String) {
     // on top of this a tf-based overlap score in range [0;1[ is added
     numTermsInCommon + termOverlap
   }
+  
+  override def toString = query
 }
