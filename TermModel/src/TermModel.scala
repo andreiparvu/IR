@@ -37,8 +37,7 @@ object TermModel {
           val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(line))).argmax
           if (topicMapping.contains(topicId)) {
             queriesTexts += new Query(line + " " + topics.getVocabularySummary(topicMapping(topicId)))
-          }
-          else {
+          } else {
             queriesTexts += new Query(line)
           }
         }
@@ -71,7 +70,7 @@ object TermModel {
         synonymGroup += w -> cnt
       }
     }
-    
+
     val trainingTopicsPath = "src/resources/topics"
     //Topic modeling
     val topics = new TipsterTopicParser(trainingTopicsPath)
@@ -110,8 +109,7 @@ object TermModel {
     
     
     println(topicMapping.mkString("\n"))*/
-    
-        
+
     //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
 
     val queriesPath = "src/resources/queries"
@@ -137,39 +135,39 @@ object TermModel {
         }
       }
     }*/
-    
+
     println("Queries " + queries2.mkString("\n"))
-    
+
     val alerts = new AlertsCosine(queries2, 100)
 
     var iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
 
     var i = 1
-    while(iter.hasNext) {
+    while (iter.hasNext) {
       val doc = iter.next
       alerts.preProcess(doc.body)
 
       i += 1
-        if (i % 10000 == 0) {
-          println(i)
-        }
+      if (i % 10000 == 0) {
+        println(i)
+        throw new Exception
+      }
     }
 
     println("Preprocessing done")
 
     iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
     i = 1
-    
-    while(iter.hasNext) {
-    	val doc = iter.next
-			alerts.process(doc.name, doc.body)
 
-			i += 1
-			if (i % 10000 == 0) {
-				println(i)
-			}
+    while (iter.hasNext) {
+      val doc = iter.next
+      alerts.process(doc.name, doc.body)
+
+      i += 1
+      if (i % 10000 == 0) {
+        println(i)
+      }
     }
-
 
     val pw = new PrintWriter("./resultsCosine")
     var totalF1: Double = 0
@@ -184,7 +182,7 @@ object TermModel {
 
       val truePos = (t & rel).size
       val precision = truePos.toDouble / t.size.toDouble
-      val recall    = truePos.toDouble / rel.size.toDouble
+      val recall = truePos.toDouble / rel.size.toDouble
 
       pw.write(precision + "\n")
       pw.write(recall + "\n")
