@@ -46,6 +46,57 @@ object TermModel {
     return (queriesIds zip queriesTexts).toMap[Int, Query]
   }
 
+  def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
+    var queriesIds = new MutableList[Int]()
+    var queriesTexts = new MutableList[Query]()
+    if (Files.exists(Paths.get(queriesPath))) {
+      println("Found queries at " + queriesPath + "\n")
+
+      val queryDoc = scala.io.Source.fromFile(queriesPath)
+      for (line <- queryDoc.getLines()) {
+        println("Line " + line)
+
+        val numeric_regex = """^\s*\d+\s*$""".r
+
+        if (line.matches("""^\s*\d+\s*$""")) {
+          queriesIds += line.toInt
+        } else {
+          queriesTexts += new Query(line)
+        }
+      }
+    }
+    return (queriesIds zip queriesTexts).toMap[Int, Query]
+  }
+
+  def loadTestQueries(testTopics: TipsterTopicParser, model: TopicModel, topics: TipsterTopicParser, topicMapping: Map[Int, Int]): collection.immutable.Map[Int, Query] = {
+    var queriesIds = new MutableList[Int]()
+    var queriesTexts = new MutableList[Query]()
+
+    for (topic <- testTopics.topics) {
+      println("Topic id " + topic.t_num + " content: " + topic.t_title)
+      queriesIds += topic.t_num
+      val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(topic.t_title))).argmax
+      if (topicMapping.contains(topicId)) {
+        queriesTexts += new Query(topic.t_title + " " + topics.getVocabularySummary(topicMapping(topicId)))
+      } else {
+        queriesTexts += new Query(topic.t_title)
+      }
+    }
+    return (queriesIds zip queriesTexts).toMap[Int, Query]
+  }
+
+  def loadTestQueries(testTopics: TipsterTopicParser): collection.immutable.Map[Int, Query] = {
+    var queriesIds = new MutableList[Int]()
+    var queriesTexts = new MutableList[Query]()
+
+    for (topic <- testTopics.topics) {
+      println("Topic id " + topic.t_num + " content: " + topic.t_title)
+      queriesIds += topic.t_num
+      queriesTexts += new Query(topic.t_title)
+    }
+    return (queriesIds zip queriesTexts).toMap[Int, Query]
+  }
+
   def loadGroundTruth(groundTruthPath: String): TipsterGroundTruth = {
     val t = new TipsterGroundTruth(groundTruthPath)
     t.judgements.foreach(j => println("Topic " + j._1 + ": " + j._2.size + " judgements found."))
@@ -74,6 +125,7 @@ object TermModel {
     val trainingTopicsPath = "src/resources/topics"
     //Topic modeling
     val topics = new TipsterTopicParser(trainingTopicsPath)
+    val topicsFinal = new TipsterTopicParser(trainingTopicsPath)
     topics.parse()
 
     val vocabulary = topics.topics.map(_.qterms.toSet).reduce(_ | _)
@@ -115,6 +167,8 @@ object TermModel {
     val queriesPath = "src/resources/queries"
     val trainingQueriesPath = "src/resources/IR2015/tipster/qrels"
     var queries2 = loadTrainingQueries(queriesPath, model, topics, topicMapping)
+    var testQueries = loadTestQueries(topicsFinal, model, topics, topicMapping)
+
     println(queries)
     var groundTruth = loadGroundTruth(trainingQueriesPath)
 
@@ -184,7 +238,7 @@ object TermModel {
 
       pw.write(precision + "\n")
       pw.write(recall + "\n")
-      if (precision != 0 && recall != 0){ 
+      if (precision != 0 && recall != 0) {
         totalF1 += precision * recall * 2 / (precision + recall)
       }
     }
