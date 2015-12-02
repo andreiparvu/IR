@@ -14,6 +14,8 @@ class ResultLogger(fname: String) {
     Files.delete(Paths.get(path))
   }
   
+  Files.createFile(Paths.get(path))
+  
   def append(text: String) {
     val fw = new FileWriter("test.txt", true)
     fw.write(text)
