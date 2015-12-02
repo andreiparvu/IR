@@ -38,7 +38,7 @@ class AlertsTfIdf(queries: Map[Int, Query], n: Int, tokenizer: Tokenizer) extend
   }
 
   def tf_idf(word: String): Double = {
-    Math.log(1 + tf(word).toDouble / tfSum) * Math.log(nrDocs.toDouble / df(word).toDouble)
+    Math.log(1 + tf(word).toDouble / tfSum) * Math.log(nrDocs.toDouble / df(word).toDouble) / (Math.log(2) * Math.log(2))
   }
 
   override def computeScore(query: String): Double = {

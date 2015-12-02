@@ -29,7 +29,7 @@ class AlertsMLE(queries: Map[Int, Query], n: Int, tokenizer: Tokenizer) extends 
 
   def mle(query: String): Double = {
     Math.log((1.0 - lambda) * tf(query).toDouble / tfSum +
-        lambda * cf(query).toDouble / cfSum)
+        lambda * cf(query).toDouble / cfSum) / Math.log(2)
   }
   override def computeScore(query: String): Double = {
     tokenizer.tokenize(query).map(q => mle(q.toLowerCase)).sum

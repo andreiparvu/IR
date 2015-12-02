@@ -61,7 +61,7 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int, tokenizer: Tokenizer) ext
   }
   
   def language(word: String): Double = {
-    tf(word).toDouble * Math.log((nrDocs + 1) / (df(word) + 1)) 
+    tf(word).toDouble * Math.log((nrDocs + 1) / (df(word) + 1)) * Math.log(2)
   }
   
   override def computeScore(query: String): Double = {
