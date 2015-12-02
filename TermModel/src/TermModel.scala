@@ -168,7 +168,8 @@ class TermModel(st: String, nbDoc: Int) {
         + "cosine\n"
         + "mle\n"
         + "tf\n"
-        + "idf\n")
+        + "idf\n"
+        + "tfidf\n")
     }
   }
 
@@ -178,7 +179,7 @@ class TermModel(st: String, nbDoc: Int) {
       //Results: use Logger.append to write to file
       val resPath = "ranking-" + st + "-2.txt"
       val resLogger = new ResultLogger(resPath)
-      val statResPath = "score-2.txt"
+      val statResPath = "score-" + st + "-2.txt"
       val statLogger = new ResultLogger(statResPath)
 
       //Output format: topic-id rank document-id
@@ -251,7 +252,8 @@ class TermModel(st: String, nbDoc: Int) {
         + "cosine\n"
         + "mle\n"
         + "tf\n"
-        + "idf\n")
+        + "idf\n"
+        + "ifidf\n")
     }
   }
 
@@ -274,7 +276,8 @@ object TermModel {
         + "cosine\n"
         + "mle\n"
         + "tf\n"
-        + "idf\n")
+        + "idf\n"
+        + "tfidf\n")
     }
   }
 }
