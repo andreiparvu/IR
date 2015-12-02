@@ -30,7 +30,7 @@ class AlertsTfIdf(queries: List[String], n: Int) extends OwnAlerts(queries, n) {
 
   def tf_idf(word: String): Double = {
     //Math.log(1 + tf(word).toDouble / tfSum) * Math.log(nrDocs.toDouble / df(word).toDouble)
-    Math.log(1 + tf(word).toDouble) * Math.log((nrDocs.toDouble + 1) / (df(word).toDouble + 1))
+    Math.log(1 + tf(word).toDouble) * Math.log((nrDocs.toDouble + 1) / (df(word).toDouble + 1)) / (Math.log(2)*Math.log(2))
   }
 
   override def computeScore(query: String): Double = {
