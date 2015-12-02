@@ -2,27 +2,24 @@ import java.io.PrintWriter
 import java.nio.file.Files
 import java.nio.file.Paths
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 import scala.collection.mutable.MutableList
-import scala.collection.mutable.Set
 
 import ch.ethz.dal.tinyir.alerts.Query
+import ch.ethz.dal.tinyir.lectures.PrecisionRecall
 import ch.ethz.dal.tinyir.lectures.TermFrequencies
 import ch.ethz.dal.tinyir.lectures.TipsterGroundTruth
 import ch.ethz.dal.tinyir.lectures.TopicModel
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
-import ch.ethz.dal.tinyir.lectures.PrecisionRecall
-
 import ch.ethz.dal.tinyir.processing.Tokenizer
+import ch.ethz.dal.tinyir.util.StopWatch
 
 class TermModel(st: String, nbDoc: Int) {
   val nbDocReturned = nbDoc
   val scoreType = st
   val trainingTopicsPath = "src/resources/topics"
   val testTopicsPath = "src/resources/topics-final"
-  
+
   var tokenizer = new Tokenizer()
 
   val topics = new TipsterTopicParser(trainingTopicsPath, tokenizer)
@@ -160,7 +157,7 @@ class TermModel(st: String, nbDoc: Int) {
           alerts.process(doc.name, doc.body)
 
           i += 1
-          if (i % 100 == 0) {
+          if (i % 10000 == 0) {
             println(i)
           }
         }
@@ -207,8 +204,6 @@ class TermModel(st: String, nbDoc: Int) {
         pres_score += score._1
         rec_score += score._2
         f1_score += score._3
-        
-        
 
         statLogger.append("Query " + 1)
         statLogger.append("Precision: " + pres_score)
@@ -224,7 +219,7 @@ class TermModel(st: String, nbDoc: Int) {
         println(pr.iaps)
         statLogger.append("AP: " + pr.aps)
         map_score += pr.aps
-        
+
         if (trainingQueries.keySet.contains(q._1)) {
           train_pres_score += score._1
           train_rec_score += score._2
@@ -268,8 +263,12 @@ object TermModel {
 
     if (args.length == 1) {
       var model = new TermModel(args(0), 100)
+      val sw = new StopWatch
+      sw.start
       model.testModel()
       model.evaluateModel()
+      sw.stop
+      println(sw.stopped)
     } else {
       println("Please enter the scoring you want to evaluate:\n"
         + "cosine\n"

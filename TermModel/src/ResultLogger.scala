@@ -13,7 +13,7 @@ class ResultLogger(fname: String) {
   }
   
   def append(text: String) {
-    val fw = new FileWriter("test.txt", true)
+    val fw = new FileWriter(path, true)
     fw.write(text)
     fw.close()
   }
