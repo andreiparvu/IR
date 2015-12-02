@@ -23,7 +23,13 @@ class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A], maxElem: Double) {
   // interpolation of precision to all recall levels 
   val iprecs = precs.scanRight(0.0)( (a,b) => Math.max(a,b)).dropRight(1)
   
-  val iaps = iprecs.sum / (tp + fn).toDouble
+  val iaps = {
+    if (tp + fn != 0) {
+      iprecs.sum / (tp + fn).toDouble
+    } else { 
+      0
+    }
+  }
   
   // number of results to reach recall level 
   private def recall2num(recall: Double) = {

@@ -176,7 +176,7 @@ class TermModel(st: String, nbDoc: Int) {
     if (alerts != null) {
       val pw = new PrintWriter("./results-" + st)
       //Results: use Logger.append to write to file
-      val resPath = "ranking-" + st + "-2.run"
+      val resPath = "ranking-" + st + "-2.txt"
       val resLogger = new ResultLogger(resPath)
       val statResPath = "score-2.txt"
       val statLogger = new ResultLogger(statResPath)
@@ -229,14 +229,14 @@ class TermModel(st: String, nbDoc: Int) {
       }
 
       statLogger.append("******************* System *******************")
-      train_map_score /= trainingQueries.size
-      train_pres_score /= trainingQueries.size
-      train_rec_score /= trainingQueries.size
-      train_f1_score /= trainingQueries.size
-      map_score /= testQueries.size
-      pres_score /= testQueries.size
-      rec_score /= testQueries.size
-      f1_score /= testQueries.size
+      train_map_score = train_map_score / trainingQueries.size
+      train_pres_score = train_pres_score / trainingQueries.size
+      train_rec_score = train_rec_score / trainingQueries.size
+      train_f1_score = train_f1_score / trainingQueries.size
+      map_score = map_score / testQueries.size
+      pres_score = pres_score / testQueries.size
+      rec_score = rec_score / testQueries.size
+      f1_score = f1_score / testQueries.size
       statLogger.append("Training Precision: " + train_pres_score)
       statLogger.append("Training Recall: " + train_rec_score)
       statLogger.append("Training F1: " + train_f1_score)
