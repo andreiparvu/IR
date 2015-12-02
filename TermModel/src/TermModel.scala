@@ -210,7 +210,7 @@ class TermModel(st: String, nbDoc: Int) {
           rec_score = score._2
           f1_score = score._3
 
-          statLogger.append("Query " + 1)
+          statLogger.append("Query " + q._1)
           statLogger.append("Precision: " + pres_score)
           statLogger.append("Recall: " + rec_score)
           statLogger.append("F1: " + f1_score)
