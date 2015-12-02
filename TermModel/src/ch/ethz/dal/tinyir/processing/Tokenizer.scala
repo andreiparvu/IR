@@ -17,7 +17,8 @@ object Tokenizer {
   val punct = Set(".", "?", "!", ":", ";", "-", "_", "(", ")", "[", "]", "...", "\"", "\\", "/", ",")
     
   def tokenize (text: String) : List[String] = {
-    text.split("[ .,;:?!\t\n\r\f]+").toList
+    //StopWords.filter(text.split("[ .,;:?!\t\n\r\f]+")).toList.map(w => PorterStemmer.stem(w))
+    StopWords.filter(text.split("\\s+|(?=\\W\\p{Punct}|\\p{Punct}\\W)|(?<=\\W\\p{Punct}|\\p{Punct}\\W})")).toList.map(w => PorterStemmer.stem(w))
   }
     
   def splitWords(text: String): List[String] = {

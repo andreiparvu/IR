@@ -82,7 +82,7 @@ object TermModel {
     val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
 
     //Learning iterations
-    for (i <- 0 until 50) model.learn(stream)
+    for (i <- 0 until 100) model.learn(stream)
 
     //Mapping the max output in  modeler to original topic number as defined in topics file
     var topicMapping = Map[Int, Int]()
