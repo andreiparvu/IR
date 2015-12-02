@@ -18,7 +18,7 @@ class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A], maxElem: Double) {
   // precision values at index positions relevIdx
   val precs = relevIdx.zipWithIndex.map{case(rnk,rel)=> (rel+1)/(rnk+1).toDouble}
   
-  val aps = precs.sum / (tp + fn).toDouble
+  val aps = precs.sum / Math.min((tp + fn).toDouble, maxElem)
     
   // interpolation of precision to all recall levels 
   val iprecs = precs.scanRight(0.0)( (a,b) => Math.max(a,b)).dropRight(1)
