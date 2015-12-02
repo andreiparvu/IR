@@ -195,33 +195,34 @@ class TermModel(st: String, nbDoc: Int) {
       var train_f1_score: Double = 0.0
 
       for (q <- testQueries) {
-        val rel = groundTruth.judgements.get(q._1 + "").get.toSet
+
         val ret = alerts.results(q._1).map(r => r.title)
 
         println("Results for query (language model) " + q._1 + " " + q._2.origQuery)
 
-        val pr = new PrecisionRecall(ret, rel, nbDoc)
-        val score = PrecisionRecall.evaluate(ret.toSet, rel, nbDoc).score
-        pres_score += score._1
-        rec_score += score._2
-        f1_score += score._3
-
-        statLogger.append("Query " + 1)
-        statLogger.append("Precision: " + pres_score)
-        statLogger.append("Recall: " + rec_score)
-        statLogger.append("F1: " + f1_score)
-
         resLogger.append(ret.zipWithIndex.map { case (t, i) => q._1 + " " + 1 + i + " " + t }.mkString("\n"))
 
-        println(pr.relevIdx.mkString(" "))
-        println(pr.precs.mkString(" "))
-        println(pr.aps)
-        println(pr.iprecs.mkString(" "))
-        println(pr.iaps)
-        statLogger.append("AP: " + pr.aps)
-        map_score += pr.aps
-
         if (trainingQueries.keySet.contains(q._1)) {
+          val rel = groundTruth.judgements.get(q._1 + "").get.toSet
+          val pr = new PrecisionRecall(ret, rel, nbDoc)
+          val score = PrecisionRecall.evaluate(ret.toSet, rel, nbDoc).score
+          pres_score = score._1
+          rec_score = score._2
+          f1_score = score._3
+
+          statLogger.append("Query " + 1)
+          statLogger.append("Precision: " + pres_score)
+          statLogger.append("Recall: " + rec_score)
+          statLogger.append("F1: " + f1_score)
+
+          println(pr.relevIdx.mkString(" "))
+          println(pr.precs.mkString(" "))
+          println(pr.aps)
+          println(pr.iprecs.mkString(" "))
+          println(pr.iaps)
+          statLogger.append("AP: " + pr.aps)
+          map_score += pr.aps
+
           train_pres_score += score._1
           train_rec_score += score._2
           train_f1_score += score._3
@@ -234,18 +235,10 @@ class TermModel(st: String, nbDoc: Int) {
       train_pres_score = train_pres_score / trainingQueries.size
       train_rec_score = train_rec_score / trainingQueries.size
       train_f1_score = train_f1_score / trainingQueries.size
-      map_score = map_score / testQueries.size
-      pres_score = pres_score / testQueries.size
-      rec_score = rec_score / testQueries.size
-      f1_score = f1_score / testQueries.size
       statLogger.append("Training Precision: " + train_pres_score)
       statLogger.append("Training Recall: " + train_rec_score)
       statLogger.append("Training F1: " + train_f1_score)
       statLogger.append("Training MAP: " + train_map_score)
-      statLogger.append("Precision: " + pres_score)
-      statLogger.append("Recall: " + rec_score)
-      statLogger.append("F1: " + f1_score)
-      statLogger.append("MAP: " + map_score)
 
     } else {
       println("Please enter the scoring you want to evaluate:\n"
