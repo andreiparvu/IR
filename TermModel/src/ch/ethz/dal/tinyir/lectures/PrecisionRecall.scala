@@ -5,7 +5,7 @@ import collection.Seq
 import util.Random
 import math.{min,max}
 
-class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A]) {
+class PrecisionRecall[A] (ranked: Seq[A], relev: Set[A], maxElem: Double) {
 
   // total number of relevant items  
   val num = relev.size
@@ -44,13 +44,21 @@ object PrecisionRecall {
   
   case class PrecRec (precision: Double, recall: Double) {
     def mkstr: String = "P = " + precision + ", R = " + recall + ", F1 = " + 2 * precision * recall / (precision + recall)
+    
+    def score: (Double, Double, Double) = {
+      var f1: Double = 0
+      if (precision != 0 && recall != 0) {
+        f1 = 2 * precision * recall / (precision + recall)
+      } 
+      (precision, recall, f1)
+    }
   }
 
-  def evaluate[A] (retriev: Set[A], relev: Set[A]) = { 
+  def evaluate[A] (retriev: Set[A], relev: Set[A], maxElem: Double) = { 
     val truePos = (retriev & relev).size
     PrecRec(
         precision = truePos.toDouble / retriev.size.toDouble,
-        recall    = truePos.toDouble / relev.size.toDouble
+        recall    = truePos.toDouble / Math.min(relev.size.toDouble, maxElem)
         )
   }
     
@@ -58,14 +66,14 @@ object PrecisionRecall {
     {
       val relevant   = Set(3,6,7,8,9)
       val retrieved  = Set(1,2,3,6) 
-	  println(PrecisionRecall.evaluate(retrieved, relevant).mkstr)
+	  println(PrecisionRecall.evaluate(retrieved, relevant, 4).mkstr)
     }
 
     {
       val relevant = Set(3,7,9,15,19)
       val ranked = Random.shuffle((0 to 19).toList)
 
-      val pr = new PrecisionRecall(ranked,relevant)
+      val pr = new PrecisionRecall(ranked,relevant, 5.0)
       println(pr.relevIdx.mkString(" "))
       println(pr.precs.mkString(" "))
       println(pr.iprecs.mkString(" "))

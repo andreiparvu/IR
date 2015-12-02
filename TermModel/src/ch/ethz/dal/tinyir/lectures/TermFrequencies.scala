@@ -19,7 +19,7 @@ object TermFrequencies {
 
   def idf(df: Map[String, Int], n: Int): Map[String, Double] =
     //Smoothing... in case term not in corpus
-    df.mapValues(v => log10(n) - log10(v + 1))
+    df.mapValues(v => log2(n) - log2(v + 1))
 
   def log2(x: Double) = log10(x) / log10(2.0)
   

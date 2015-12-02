@@ -4,7 +4,7 @@ import ch.ethz.dal.tinyir.alerts.Query
 import ch.ethz.dal.tinyir.processing.Tokenizer
 
 class AlertsSynonyms(queries: Map[Int, Query], n: Int, synonyms: HashMap[Int, List[String]],
-    synonymGroup: HashMap[String, Int]) extends Alerts(queries, n) {
+    synonymGroup: HashMap[String, Int], tokenizer: Tokenizer) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val cf = new HashMap[String, Int]().withDefaultValue(0)
 
@@ -15,7 +15,7 @@ class AlertsSynonyms(queries: Map[Int, Query], n: Int, synonyms: HashMap[Int, Li
   override def processDocument(doc: String) {
     tf.clear()
     tfSum = 0
-    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+    for (w <- tokenizer.tokenize(doc).map(_.toLowerCase)) {
       tf.update(w, tf(w) + 1)
       tfSum += 1
     }
@@ -40,6 +40,6 @@ class AlertsSynonyms(queries: Map[Int, Query], n: Int, synonyms: HashMap[Int, Li
   }
 
   override def computeScore(query: String): Double = {
-    Tokenizer.tokenize(query).map(q => mle(q.toLowerCase)).sum
+    tokenizer.tokenize(query).map(q => mle(q.toLowerCase)).sum
   }
 }

@@ -5,7 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import ch.ethz.dal.tinyir.processing._
 
-class TipsterTopicParser(var path: String) {
+class TipsterTopicParser(var path: String, tokenizer: Tokenizer) {
   var topics = new MutableList[Topic]()
   var topicIds = Map[Int, Int]()
   def getVocabulary(id: Int): String = {
@@ -15,7 +15,7 @@ class TipsterTopicParser(var path: String) {
   def getVocabularySummary(id: Int): String = {
     println(topicIds)
     val content = topics(topicIds(id)).t_smry.toLowerCase
-    return StopWords.filter(Tokenizer.tokenize(content)).toSet.mkString(" ")
+    return StopWords.filter(tokenizer.tokenize(content)).toSet.mkString(" ")
   }
   def parse() {
     if (Files.exists(Paths.get(path))) {
@@ -107,7 +107,7 @@ class TipsterTopicParser(var path: String) {
             if (entryData.length > 0) {
               entries += currentTag -> entryData.toString()
             }
-            val t = new Topic(entries)
+            val t = new Topic(entries, tokenizer)
             println(t)
             topicIds(t.t_num) = topics.size
             topics += t

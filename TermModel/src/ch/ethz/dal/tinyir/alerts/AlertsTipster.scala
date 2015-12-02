@@ -31,7 +31,7 @@ object AlertsTipster {
     
     val rel = new TipsterGroundTruth("/Users/thofmann/Data/TREC/qrels.51-100.disk1.disk2").judgements.get("51").get.toSet
     val ret = alerts.results.map(r => r.title)
-    val pr = new PrecisionRecall(ret,rel)
+    val pr = new PrecisionRecall(ret,rel, num)
     println(pr.relevIdx.mkString(" "))
     println(pr.precs.mkString(" "))
     println(pr.iprecs.mkString(" "))

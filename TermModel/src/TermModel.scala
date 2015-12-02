@@ -13,12 +13,66 @@ import ch.ethz.dal.tinyir.lectures.TermFrequencies
 import ch.ethz.dal.tinyir.lectures.TipsterGroundTruth
 import ch.ethz.dal.tinyir.lectures.TopicModel
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
+import ch.ethz.dal.tinyir.lectures.PrecisionRecall
 
 import ch.ethz.dal.tinyir.processing.Tokenizer
 
-object TermModel {
+class TermModel(st: String, nbDoc: Int) {
+  val nbDocReturned = nbDoc
+  val scoreType = st
+  val trainingTopicsPath = "src/resources/topics"
+  val testTopicsPath = "src/resources/topics-final"
+  
+  var tokenizer = new Tokenizer()
 
-  def loadTrainingQueries(queriesPath: String, model: TopicModel, topics: TipsterTopicParser, topicMapping: Map[Int, Int]): collection.immutable.Map[Int, Query] = {
+  val topics = new TipsterTopicParser(trainingTopicsPath, tokenizer)
+  val topicsFinal = new TipsterTopicParser(testTopicsPath, tokenizer)
+  topics.parse()
+  topicsFinal.parse()
+
+  val queriesPath = "src/resources/queries"
+  val trainingQueriesPath = "src/resources/IR2015/tipster/qrels"
+
+  //Topic modeling
+  val vocabulary = topics.topics.map(_.qterms.toSet).reduce(_ | _)
+  val ntopics = topics.topics.size
+  val model = new TopicModel(vocabulary, ntopics)
+  val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
+
+  //Learning iterations
+  for (i <- 0 until 100) model.learn(stream)
+
+  //Mapping the max output in  modeler to original topic number as defined in topics file
+  var topicMapping = Map[Int, Int]()
+
+  //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
+  for (i <- 0 until ntopics) {
+    println("*** Topic model for doc " + i + " = " + model.topics(stream(i)).mkString(" ") + " ***")
+    //Mapping topic
+    println(i + " is topic " + topics.topics(i).t_num + " mapped to " + model.topics(stream(i)).argmax)
+    //println(model.topics(stream(i)).argmax)
+    topicMapping(model.topics(stream(i)).argmax) = topics.topics(i).t_num
+  }
+
+  var trainingQueries = loadTrainingQueries(true)
+  var testQueries = loadTestQueries(true)
+
+  var groundTruth = loadGroundTruth()
+
+  var alerts: Alerts = null
+  if (st == "cosine") {
+    alerts = new AlertsCosine(testQueries, nbDocReturned, tokenizer)
+  } else if (st == "mle") {
+    alerts = new AlertsMLE(testQueries, nbDocReturned, tokenizer)
+  } else if (st == "tf") {
+    alerts = new AlertsTF(testQueries, nbDocReturned, tokenizer)
+  } else if (st == "idf") {
+    alerts = new AlertsIDF(testQueries, nbDocReturned, tokenizer)
+  } else if (st == "tfidf") {
+    alerts = new AlertsTfIdf(testQueries, nbDocReturned, tokenizer)
+  }
+
+  private def loadTrainingQueries(isTopicModelling: Boolean): collection.immutable.Map[Int, Query] = {
     var queriesIds = new MutableList[Int]()
     var queriesTexts = new MutableList[Query]()
     if (Files.exists(Paths.get(queriesPath))) {
@@ -33,10 +87,14 @@ object TermModel {
         if (line.matches("""^\s*\d+\s*$""")) {
           queriesIds += line.toInt
         } else {
-          //Mapping topics
-          val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(line))).argmax
-          if (topicMapping.contains(topicId)) {
-            queriesTexts += new Query(line + " " + topics.getVocabularySummary(topicMapping(topicId)))
+          if (isTopicModelling) {
+            //Mapping topics
+            val topicId = model.topics(TermFrequencies.tf(tokenizer.getTokens(line))).argmax
+            if (topicMapping.contains(topicId)) {
+              queriesTexts += new Query(line + " " + topics.getVocabularySummary(topicMapping(topicId)))
+            } else {
+              queriesTexts += new Query(line)
+            }
           } else {
             queriesTexts += new Query(line)
           }
@@ -46,38 +104,21 @@ object TermModel {
     return (queriesIds zip queriesTexts).toMap[Int, Query]
   }
 
-  def loadTrainingQueries(queriesPath: String): collection.immutable.Map[Int, Query] = {
-    var queriesIds = new MutableList[Int]()
-    var queriesTexts = new MutableList[Query]()
-    if (Files.exists(Paths.get(queriesPath))) {
-      println("Found queries at " + queriesPath + "\n")
-
-      val queryDoc = scala.io.Source.fromFile(queriesPath)
-      for (line <- queryDoc.getLines()) {
-        println("Line " + line)
-
-        val numeric_regex = """^\s*\d+\s*$""".r
-
-        if (line.matches("""^\s*\d+\s*$""")) {
-          queriesIds += line.toInt
-        } else {
-          queriesTexts += new Query(line)
-        }
-      }
-    }
-    return (queriesIds zip queriesTexts).toMap[Int, Query]
-  }
-
-  def loadTestQueries(testTopics: TipsterTopicParser, model: TopicModel, topics: TipsterTopicParser, topicMapping: Map[Int, Int]): collection.immutable.Map[Int, Query] = {
+  private def loadTestQueries(isTopicModelling: Boolean): collection.immutable.Map[Int, Query] = {
     var queriesIds = new MutableList[Int]()
     var queriesTexts = new MutableList[Query]()
 
-    for (topic <- testTopics.topics) {
+    for (topic <- topicsFinal.topics) {
       println("Topic id " + topic.t_num + " content: " + topic.t_title)
       queriesIds += topic.t_num
-      val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(topic.t_title))).argmax
-      if (topicMapping.contains(topicId)) {
-        queriesTexts += new Query(topic.t_title + " " + topics.getVocabularySummary(topicMapping(topicId)))
+      if (isTopicModelling) {
+        //Mapping topics
+        val topicId = model.topics(TermFrequencies.tf(tokenizer.getTokens(topic.t_title))).argmax
+        if (topicMapping.contains(topicId)) {
+          queriesTexts += new Query(topic.t_title + " " + topics.getVocabularySummary(topicMapping(topicId)))
+        } else {
+          queriesTexts += new Query(topic.t_title)
+        }
       } else {
         queriesTexts += new Query(topic.t_title)
       }
@@ -85,166 +126,156 @@ object TermModel {
     return (queriesIds zip queriesTexts).toMap[Int, Query]
   }
 
-  def loadTestQueries(testTopics: TipsterTopicParser): collection.immutable.Map[Int, Query] = {
-    var queriesIds = new MutableList[Int]()
-    var queriesTexts = new MutableList[Query]()
-
-    for (topic <- testTopics.topics) {
-      println("Topic id " + topic.t_num + " content: " + topic.t_title)
-      queriesIds += topic.t_num
-      queriesTexts += new Query(topic.t_title)
-    }
-    return (queriesIds zip queriesTexts).toMap[Int, Query]
-  }
-
-  def loadGroundTruth(groundTruthPath: String): TipsterGroundTruth = {
-    val t = new TipsterGroundTruth(groundTruthPath)
+  def loadGroundTruth(): TipsterGroundTruth = {
+    val t = new TipsterGroundTruth(trainingQueriesPath)
     t.judgements.foreach(j => println("Topic " + j._1 + ": " + j._2.size + " judgements found."))
     return t
   }
 
+  def testModel() {
+    if (alerts != null) {
+      val zipPath = "src/resources/IR2015/tipster/zips"
+      var iter = new TipsterCorpusIterator(zipPath)
+      var i = 0
+
+      if (st != "tf") {
+        while (iter.hasNext) {
+          val doc = iter.next
+          alerts.preProcess(doc.body)
+
+          i += 1
+          if (i % 10000 == 0) {
+            println(i)
+          }
+        }
+        println("Preprocessing done")
+      }
+
+      if (st != "idf") {
+        iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
+        i = 0
+
+        while (iter.hasNext) {
+          val doc = iter.next
+          alerts.process(doc.name, doc.body)
+
+          i += 1
+          if (i % 100 == 0) {
+            println(i)
+          }
+        }
+      }
+      println("Processing done")
+    } else {
+      println("Please enter the scoring you want to evaluate:\n"
+        + "cosine\n"
+        + "mle\n"
+        + "tf\n"
+        + "idf\n")
+    }
+  }
+
+  def evaluateModel() {
+    if (alerts != null) {
+      val pw = new PrintWriter("./results-" + st)
+      //Results: use Logger.append to write to file
+      val resPath = "ranking-" + st + "-2.run"
+      val resLogger = new ResultLogger(resPath)
+      val statResPath = "score-2.txt"
+      val statLogger = new ResultLogger(statResPath)
+
+      //Output format: topic-id rank document-id
+
+      var totalF1: Double = 0
+      var map_score: Double = 0.0
+      var pres_score: Double = 0.0
+      var rec_score: Double = 0.0
+      var f1_score: Double = 0.0
+      var train_map_score: Double = 0.0
+      var train_pres_score: Double = 0.0
+      var train_rec_score: Double = 0.0
+      var train_f1_score: Double = 0.0
+
+      for (q <- testQueries) {
+        val rel = groundTruth.judgements.get(q._1 + "").get.toSet
+        val ret = alerts.results(q._1).map(r => r.title)
+
+        println("Results for query (language model) " + q._1 + " " + q._2.origQuery)
+
+        val pr = new PrecisionRecall(ret, rel, nbDoc)
+        val score = PrecisionRecall.evaluate(ret.toSet, rel, nbDoc).score
+        pres_score += score._1
+        rec_score += score._2
+        f1_score += score._3
+        
+        
+
+        statLogger.append("Query " + 1)
+        statLogger.append("Precision: " + pres_score)
+        statLogger.append("Recall: " + rec_score)
+        statLogger.append("F1: " + f1_score)
+
+        resLogger.append(ret.zipWithIndex.map { case (t, i) => q._1 + " " + 1 + i + " " + t }.mkString("\n"))
+
+        println(pr.relevIdx.mkString(" "))
+        println(pr.precs.mkString(" "))
+        println(pr.aps)
+        println(pr.iprecs.mkString(" "))
+        println(pr.iaps)
+        statLogger.append("AP: " + pr.aps)
+        map_score += pr.aps
+        
+        if (trainingQueries.keySet.contains(q._1)) {
+          train_pres_score += score._1
+          train_rec_score += score._2
+          train_f1_score += score._3
+          train_map_score += pr.aps
+        }
+      }
+
+      statLogger.append("******************* System *******************")
+      train_map_score /= trainingQueries.size
+      train_pres_score /= trainingQueries.size
+      train_rec_score /= trainingQueries.size
+      train_f1_score /= trainingQueries.size
+      map_score /= testQueries.size
+      pres_score /= testQueries.size
+      rec_score /= testQueries.size
+      f1_score /= testQueries.size
+      statLogger.append("Training Precision: " + train_pres_score)
+      statLogger.append("Training Recall: " + train_rec_score)
+      statLogger.append("Training F1: " + train_f1_score)
+      statLogger.append("Training MAP: " + train_map_score)
+      statLogger.append("Precision: " + pres_score)
+      statLogger.append("Recall: " + rec_score)
+      statLogger.append("F1: " + f1_score)
+      statLogger.append("MAP: " + map_score)
+
+    } else {
+      println("Please enter the scoring you want to evaluate:\n"
+        + "cosine\n"
+        + "mle\n"
+        + "tf\n"
+        + "idf\n")
+    }
+  }
+
+}
+
+object TermModel {
+
   def main(args: Array[String]) {
-    val queryDoc = scala.io.Source.fromFile("src/resources/queries")
-    val queryIds = new ListBuffer[Int]()
-    val queries = new ListBuffer[String]()
-    val synonymDoc = scala.io.Source.fromFile("src/resources/synonyms")
 
-    var cnt = 0
-    var synonyms = new HashMap[Int, List[String]]()
-    var synonymGroup = new HashMap[String, Int]()
-    for (s <- synonymDoc.getLines()) {
-      cnt += 1
-      val words = s.split(" +").map(_.trim)
-      synonyms += cnt -> words.toList
-
-      for (w <- words) {
-        synonymGroup += w -> cnt
-      }
+    if (args.length == 1) {
+      var model = new TermModel(args(0), 100)
+      model.testModel()
+      model.evaluateModel()
+    } else {
+      println("Please enter the scoring you want to evaluate:\n"
+        + "cosine\n"
+        + "mle\n"
+        + "tf\n"
+        + "idf\n")
     }
-
-    val trainingTopicsPath = "src/resources/topics"
-    //Topic modeling
-    val topics = new TipsterTopicParser(trainingTopicsPath)
-    val topicsFinal = new TipsterTopicParser(trainingTopicsPath)
-    topics.parse()
-
-    val vocabulary = topics.topics.map(_.qterms.toSet).reduce(_ | _)
-    val ntopics = topics.topics.size
-    val model = new TopicModel(vocabulary, ntopics)
-    val stream = topics.topics.map { case x => TermFrequencies.tf(x.qterms) }.toStream
-
-    //Learning iterations
-    for (i <- 0 until 100) model.learn(stream)
-
-    //Mapping the max output in  modeler to original topic number as defined in topics file
-    var topicMapping = Map[Int, Int]()
-
-    //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
-    for (i <- 0 until ntopics) {
-      println("*** Topic model for doc " + i + " = " + model.topics(stream(i)).mkString(" ") + " ***")
-      //Mapping topic
-      println(i + " is topic " + topics.topics(i).t_num + " mapped to " + model.topics(stream(i)).argmax)
-      //println(model.topics(stream(i)).argmax)
-      topicMapping(model.topics(stream(i)).argmax) = topics.topics(i).t_num
-    }
-
-    //println(topicMapping)
-    /*var topicVocs = Map[Int, Set[String]]().withDefaultValue(Set.empty)
-    for ((w, a) <- model.Pwt) {
-      for (id <- 0 until ntopics) {
-        //println((a.arr).length + " " +  a.arr(10))
-        if (a.arr(id) > 0) {
-          topicVocs(id).add(w)
-        }
-      }
-    }
-    
-    
-    println(topicMapping.mkString("\n"))*/
-
-    //model.Pwt.foreach{ case (w,a) => println(w + ": " + a.mkString(" ")) } 
-
-    val queriesPath = "src/resources/queries"
-    val trainingQueriesPath = "src/resources/IR2015/tipster/qrels"
-    var queries2 = loadTrainingQueries(queriesPath, model, topics, topicMapping)
-    var testQueries = loadTestQueries(topicsFinal, model, topics, topicMapping)
-
-    println(queries)
-    var groundTruth = loadGroundTruth(trainingQueriesPath)
-
-    /*for (q <- queryDoc.getLines()) {
-      try {
-        val id = q.toInt
-        queryIds += id
-      } catch {
-        case e: Exception => { 
-          //Mapping topics
-          val topicId = model.topics(TermFrequencies.tf(Tokenizer.getTokens(q))).argmax
-          if (topicMapping.contains(topicId)) {
-            queries += q + " " + topics.getVocabularySummary(topicMapping(topicId))
-          }
-          else {
-            queries += q 
-          }
-        }
-      }
-    }*/
-
-    println("Queries " + queries2.mkString("\n"))
-
-    val alerts = new AlertsCosine(queries2, 100)
-
-    var iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
-
-    var i = 1
-    while (iter.hasNext) {
-      val doc = iter.next
-      alerts.preProcess(doc.body)
-
-      i += 1
-      if (i % 10000 == 0) {
-        println(i)
-      }
-    }
-
-    println("Preprocessing done")
-
-    iter = new TipsterCorpusIterator("src/resources/IR2015/tipster/zips")
-    i = 1
-
-    while (iter.hasNext) {
-      val doc = iter.next
-      alerts.process(doc.name, doc.body)
-
-      i += 1
-      if (i % 100 == 0) {
-        println(i)
-      }
-    }
-
-    val pw = new PrintWriter("./resultsCosine")
-    var totalF1: Double = 0
-    for (q <- queries2) {
-      pw.write(q._1 + "\n")
-      val rel = groundTruth.judgements.get(q._1 + "").get.toSet
-      pw.write(rel.toString() + "\n")
-      val ret_term = alerts.results(q._1)
-      val t = ret_term.map(_.title).toSet
-      pw.write(t.toString() + "\n")
-
-      val truePos = (t & rel).size
-      val precision = truePos.toDouble / t.size.toDouble
-      val recall = truePos.toDouble / Math.min(rel.size.toDouble, 100.0)
-
-      pw.write(precision + "\n")
-      pw.write(recall + "\n")
-      if (precision != 0 && recall != 0) {
-        totalF1 += precision * recall * 2 / (precision + recall)
-      }
-    }
-
-    pw.write(totalF1 / queries2.size + "")
-    pw.flush()
-    pw.close()
   }
 }

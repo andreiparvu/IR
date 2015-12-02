@@ -4,7 +4,7 @@ import ch.ethz.dal.tinyir.alerts.Query
 import ch.ethz.dal.tinyir.processing.Tokenizer
 import scala.collection.mutable.HashSet
 
-class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
+class AlertsCosine(queries: Map[Int, Query], n: Int, tokenizer: Tokenizer) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val df = new HashMap[String, Int]().withDefaultValue(0)
 
@@ -13,7 +13,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
 
   override def processDocument(doc: String) {
     tf.clear()
-    for (w <- Tokenizer.tokenize(doc.toLowerCase)) {
+    for (w <- tokenizer.tokenize(doc.toLowerCase)) {
       tf.update(w, tf(w) + 1)
       tfSum += 1
     }
@@ -26,7 +26,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   override def preProcess(doc: String) {
     val terms = new HashSet[String]();
 
-    for (w <- Tokenizer.tokenize(doc.toLowerCase)) {
+    for (w <- tokenizer.tokenize(doc.toLowerCase)) {
       terms += w
     }
 
@@ -37,7 +37,7 @@ class AlertsCosine(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) 
   }
 
   override def computeScore(query: String): Double = {
-    val qtf = Tokenizer.tokenize(query.toLowerCase).groupBy(identity).mapValues(l => l.length)
+    val qtf = tokenizer.tokenize(query.toLowerCase).groupBy(identity).mapValues(l => l.length)
     val qtf_idf = qtf.map{ case(w, v)  => tf_idf(w, v)}
     val doctf_idf = qtf.map{ case(w, v)  => tf_idf(w, tf.getOrElse(w, 0))}
     val qLen = Math.sqrt(qtf_idf.map(x => x*x).sum.toDouble)  // Euclidian norm

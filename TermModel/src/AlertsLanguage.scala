@@ -4,7 +4,7 @@ import ch.ethz.dal.tinyir.processing.Tokenizer
 import scala.collection.mutable.HashSet
 
 
-class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n) {
+class AlertsLanguage(queries: Map[Int, Query], n: Int, tokenizer: Tokenizer) extends Alerts(queries, n) {
   val tf = new HashMap[String, Int]().withDefaultValue(0)
   val cf = new HashMap[String, Int]().withDefaultValue(0)
   val df = new HashMap[String, Int]().withDefaultValue(0)
@@ -18,7 +18,7 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
     nrDocs += 1
     val terms = new HashSet[String]();
 
-    for (w <- Tokenizer.tokenize(doc).map(_.toLowerCase)) {
+    for (w <- tokenizer.tokenize(doc).map(_.toLowerCase)) {
       terms += w
     }
 
@@ -34,7 +34,7 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
     nrDocs += 1
     
     //println(doc)
-    for (w <- Tokenizer.tokenize(doc)) {
+    for (w <- tokenizer.tokenize(doc)) {
       //println(w)
       tf.update(w, tf(w) + 1)
       tfSum += 1
@@ -65,6 +65,6 @@ class AlertsLanguage(queries: Map[Int, Query], n: Int) extends Alerts(queries, n
   }
   
   override def computeScore(query: String): Double = {
-    Tokenizer.getTokens(query).map(q => language(q)).sum
+    tokenizer.getTokens(query).map(q => language(q)).sum
   }
 }
